@@ -1,11 +1,13 @@
 package main
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -24,6 +26,10 @@ type BlinkResponse struct {
 	RTT           time.Duration
 	Method        string
 	URL           string
+	TLSVersion    uint16
+	CipherSuite   uint16
+	CertIssuer    string
+	CertExpires   time.Time
 }
 
 const (
@@ -51,7 +57,9 @@ func colorStatus(code int) string {
 }
 
 type flagCondition struct {
-	ShowBody bool
+	ShowBody        bool
+	FollowRedirects bool
+	MaxRedirects    int
 }
 
 var fc flagCondition
@@ -63,93 +71,130 @@ func main() {
 
 	method := flag.String("X", "GET", "HTTP method")
 
+	followRedirects := flag.Bool("no-follow", true, "Follow redirects")
+	maxRedirects := flag.Int("max-redirects", 5, "Set value to max redirects")
+
 	data := flag.String("data", "", "HTTP Payload")
 	flag.Parse()
 	if *showBody || *showBodyLong {
 		fc.ShowBody = true
 	}
+	fc.FollowRedirects = *followRedirects
+	fc.MaxRedirects = *maxRedirects
 
 	if flag.NArg() < 1 {
 		log.Fatal("URL is required")
 	}
 
 	url := flag.Arg(0)
-	response, err := HttpRequest(*method, url, *data)
+	response, redirects, err := HttpRequest(*method, url, *data)
 	if err != nil {
 		log.Println(err)
+	}
+	if len(redirects) > 0 {
+		for _, redirect := range redirects {
+			cleanOutput(redirect, 0)
+		}
 	}
 	cleanOutput(response, 1)
 }
 
-func HttpRequest(method string, domain string, data string) (BlinkResponse, error) {
-	var blinkResp BlinkResponse
-	if method == "GET" && data != "" {
-		return blinkResp, fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT")
-	}
-	var payloadReader io.Reader
-	if data != "" {
-		payloadReader = strings.NewReader(data)
-	} else {
-		payloadReader = nil
-	}
+func HttpRequest(method string, domain string, data string) (BlinkResponse, []BlinkResponse, error) {
+	current := domain
+	currentMethod := method
+	var redirectChain []BlinkResponse
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, domain, payloadReader)
-	if err != nil {
-		return blinkResp, err
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // НЕ редіректитись
+		},
 	}
 
-	if data != "" {
-		req.Header.Set("Content-Type", "application/json")
+	for hop := 0; hop < fc.MaxRedirects; hop++ {
+		var blinkResp BlinkResponse
+
+		if currentMethod == "GET" && data != "" {
+			return blinkResp, redirectChain, fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT")
+		}
+
+		var payloadReader io.Reader
+		if data != "" {
+			payloadReader = strings.NewReader(data)
+		} else {
+			payloadReader = nil
+		}
+
+		req, err := http.NewRequest(currentMethod, current, payloadReader)
+
+		if err != nil {
+			return blinkResp, redirectChain, err
+		}
+
+		if data != "" {
+			req.Header.Set("Content-Type", "application/json")
+
+		}
+
+		req.Header.Set("User-Agent", "Blink/1.0")
+		req.Header.Set("Accept", "*/*")
+		start := time.Now()
+		resp, err := client.Do(req)
+		rtt := time.Since(start)
+
+		if err != nil {
+			return blinkResp, redirectChain, err
+		}
+
+		blinkResp, err = makeBlinkResponce(resp, rtt)
+		if err != nil {
+			return blinkResp, redirectChain, err
+		}
+		resp.Body.Close()
+		if !fc.FollowRedirects {
+			return blinkResp, redirectChain, fmt.Errorf("handeled redirect, but deny from user flags")
+		}
+
+		if blinkResp.StatusCode >= 300 && blinkResp.StatusCode < 400 { // redirect
+			loc := blinkResp.Headers.Get("Location")
+			if loc == "" {
+				return blinkResp, redirectChain, fmt.Errorf("redirect with no Location header")
+			}
+
+			u, err := url.Parse(loc)
+			if err != nil {
+				return blinkResp, redirectChain, fmt.Errorf("invalid redirect Location")
+			}
+			if blinkResp.StatusCode == 302 || blinkResp.StatusCode == 303 {
+				currentMethod = "GET"
+				payloadReader = nil
+			} else {
+
+			}
+			current = resp.Request.URL.ResolveReference(u).String()
+			redirectChain = append(redirectChain, blinkResp)
+			continue
+
+		}
+		if blinkResp.StatusCode < 300 || blinkResp.StatusCode >= 400 { // not redirect
+			return blinkResp, redirectChain, nil
+		}
 
 	}
-
-	req.Header.Set("User-Agent", "Blink/1.0")
-	req.Header.Set("Accept", "*/*")
-	start := time.Now()
-	resp, err := client.Do(req)
-	rtt := time.Since(start)
-
-	if err != nil {
-		return blinkResp, err
-	}
-	defer resp.Body.Close()
-
-	blinkResp.Status = resp.Status
-	blinkResp.StatusCode = resp.StatusCode
-	blinkResp.Proto = resp.Proto
-	blinkResp.ProtoMajor = resp.ProtoMajor
-	blinkResp.ProtoMinor = resp.ProtoMinor
-	blinkResp.Headers = resp.Header
-	blinkResp.ContentLength = resp.ContentLength
-	blinkResp.Method = resp.Request.Method
-	blinkResp.URL = resp.Request.URL.String()
-	blinkResp.RTT = rtt
-
-	limited := io.LimitReader(resp.Body, 2*1024*1024) // 2MB
-	bodyBytes, _ := io.ReadAll(limited)
-	blinkResp.Body = bodyBytes
-	if len(bodyBytes) > 300 {
-		blinkResp.BodyPreview = string(bodyBytes[:300])
-	} else {
-		blinkResp.BodyPreview = string(bodyBytes)
-	}
-
-	return blinkResp, nil
+	return BlinkResponse{}, redirectChain, nil
 }
 
 func cleanOutput(bl BlinkResponse, mode int) {
+	var out strings.Builder
 	if mode == 0 {
-		var out strings.Builder
 
-		out.WriteString(Cyan + "[Blink]\n" + Reset)
+		out.WriteString(Cyan + "[Blink] ===================================================================================\n" + Reset)
 		out.WriteString(fmt.Sprintf(
-			Bold+"method:         "+Reset+"%s\n"+
-				Bold+"url:            "+Reset+"%s\n"+
-				Bold+"status:         "+Reset+colorStatus(bl.StatusCode)+"%d (%s)"+Reset+"\n"+
-				Bold+"proto:          "+Reset+"%s (%d.%d)\n"+
-				Bold+"rtt:            "+Reset+"%s\n"+
-				Bold+"content_length: "+Reset+"%d\n",
+			Bold+"method: "+Reset+"%s\n"+
+				Bold+"url:    "+Reset+"%s\n"+
+				Bold+"status: "+Reset+colorStatus(bl.StatusCode)+"%d (%s)"+Reset+"\n"+
+				Bold+"proto:  "+Reset+"%s (%d.%d)\n"+
+				Bold+"rtt:    "+Reset+"%s\n"+
+				Bold+"length: "+Reset+"%d\n",
 			bl.Method,
 			bl.URL,
 			bl.StatusCode, bl.Status,
@@ -157,6 +202,12 @@ func cleanOutput(bl BlinkResponse, mode int) {
 			bl.RTT,
 			bl.ContentLength,
 		))
+		out.WriteString(Bold + "TLS:" + Reset + "\n")
+		out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
+		out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
+		out.WriteString(fmt.Sprintf("   Issuer:  %v\n", bl.CertIssuer))
+		out.WriteString(fmt.Sprintf("   Expires: %v\n", bl.CertExpires))
+
 		out.WriteString(Bold + "headers:" + Reset + "\n")
 		for k, v := range bl.Headers {
 			out.WriteString(fmt.Sprintf("  "+Bold+"%s:"+Reset+" %s\n", k, v))
@@ -168,14 +219,49 @@ func cleanOutput(bl BlinkResponse, mode int) {
 			out.WriteString("\n")
 		}
 
-		fmt.Print(out.String())
 	} else {
-		var out strings.Builder
 		out.WriteString(colorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
 		out.WriteString(Blue + "[ " + Reset + bl.URL + Blue + " ] " + Reset)
-		out.WriteString(fmt.Sprintf("(%vms)", bl.RTT.Milliseconds()))
+		out.WriteString(fmt.Sprintf("(%vms)\n", bl.RTT.Milliseconds()))
 
-		fmt.Print(out.String())
+	}
+	fmt.Print(out.String())
+
+}
+
+func makeBlinkResponce(resp *http.Response, rtt time.Duration) (BlinkResponse, error) {
+	var blinkResp BlinkResponse
+	blinkResp.Status = resp.Status
+	blinkResp.StatusCode = resp.StatusCode
+	blinkResp.Proto = resp.Proto
+	blinkResp.ProtoMajor = resp.ProtoMajor
+	blinkResp.ProtoMinor = resp.ProtoMinor
+	blinkResp.Headers = resp.Header
+	blinkResp.ContentLength = resp.ContentLength
+	blinkResp.Method = resp.Request.Method
+	blinkResp.URL = resp.Request.URL.String()
+	blinkResp.RTT = rtt
+
+	// TLS
+	blinkResp.TLSVersion = resp.TLS.Version
+	blinkResp.CipherSuite = resp.TLS.CipherSuite
+	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
+		cert := resp.TLS.PeerCertificates[0] // leaf certificate
+		blinkResp.CertIssuer = cert.Issuer.String()
+		blinkResp.CertExpires = cert.NotAfter
 	}
 
+	limited := io.LimitReader(resp.Body, 2*1024*1024) // 2MB
+	bodyBytes, _ := io.ReadAll(limited)
+	blinkResp.Body = bodyBytes
+	if len(bodyBytes) > 300 {
+		blinkResp.BodyPreview = string(bodyBytes[:300])
+	} else {
+		blinkResp.BodyPreview = string(bodyBytes)
+	}
+
+	sum := sha256.Sum256(bodyBytes)
+	blinkResp.BodyHash = fmt.Sprintf("%x", sum)
+
+	return blinkResp, nil
 }
