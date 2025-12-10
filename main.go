@@ -2,10 +2,13 @@ package main
 
 import (
 	"crypto/sha256"
+	"crypto/x509"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,6 +33,11 @@ type BlinkResponse struct {
 	CipherSuite   uint16
 	CertIssuer    string
 	CertExpires   time.Time
+}
+
+type BlinkError struct {
+	Stage   string // DNS, TCP, TLS, HTTP, REDIRECT, BODY, UNKNOWN, OK
+	Message string
 }
 
 const (
@@ -60,6 +68,7 @@ type flagCondition struct {
 	ShowBody        bool
 	FollowRedirects bool
 	MaxRedirects    int
+	Timeout         int
 }
 
 var fc flagCondition
@@ -74,6 +83,8 @@ func main() {
 	followRedirects := flag.Bool("no-follow", true, "Follow redirects")
 	maxRedirects := flag.Int("max-redirects", 5, "Set value to max redirects")
 
+	timeout := flag.Int("timeout", 5, "Seconds to timeout")
+
 	data := flag.String("data", "", "HTTP Payload")
 	flag.Parse()
 	if *showBody || *showBodyLong {
@@ -81,6 +92,7 @@ func main() {
 	}
 	fc.FollowRedirects = *followRedirects
 	fc.MaxRedirects = *maxRedirects
+	fc.Timeout = *timeout
 
 	if flag.NArg() < 1 {
 		log.Fatal("URL is required")
@@ -88,18 +100,19 @@ func main() {
 
 	url := flag.Arg(0)
 	response, redirects, err := HttpRequest(*method, url, *data)
-	if err != nil {
-		log.Println(err)
+	if err.Stage != "OK" {
+		fmt.Printf(Red+"[ %v ERROR ] %s\n"+Reset, err.Stage, err.Message)
+		return
 	}
 	if len(redirects) > 0 {
 		for _, redirect := range redirects {
-			cleanOutput(redirect, 0)
+			cleanOutput(redirect, 1)
 		}
 	}
 	cleanOutput(response, 1)
 }
 
-func HttpRequest(method string, domain string, data string) (BlinkResponse, []BlinkResponse, error) {
+func HttpRequest(method string, domain string, data string) (BlinkResponse, []BlinkResponse, BlinkError) {
 	current := domain
 	currentMethod := method
 	var redirectChain []BlinkResponse
@@ -108,13 +121,14 @@ func HttpRequest(method string, domain string, data string) (BlinkResponse, []Bl
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse // НЕ редіректитись
 		},
+		Timeout: time.Duration(fc.Timeout) * time.Second,
 	}
 
 	for hop := 0; hop < fc.MaxRedirects; hop++ {
 		var blinkResp BlinkResponse
 
 		if currentMethod == "GET" && data != "" {
-			return blinkResp, redirectChain, fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT")
+			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT"))
 		}
 
 		var payloadReader io.Reader
@@ -127,7 +141,7 @@ func HttpRequest(method string, domain string, data string) (BlinkResponse, []Bl
 		req, err := http.NewRequest(currentMethod, current, payloadReader)
 
 		if err != nil {
-			return blinkResp, redirectChain, err
+			return blinkResp, redirectChain, classifyNetworkError(err)
 		}
 
 		if data != "" {
@@ -142,29 +156,29 @@ func HttpRequest(method string, domain string, data string) (BlinkResponse, []Bl
 		rtt := time.Since(start)
 
 		if err != nil {
-			return blinkResp, redirectChain, err
+			return blinkResp, redirectChain, classifyNetworkError(err)
 		}
 
 		blinkResp, err = makeBlinkResponce(resp, rtt)
 		if err != nil {
-			return blinkResp, redirectChain, err
+			return blinkResp, redirectChain, classifyNetworkError(err)
 		}
 		resp.Body.Close()
 		if !fc.FollowRedirects {
-			return blinkResp, redirectChain, fmt.Errorf("handeled redirect, but deny from user flags")
+			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("handeled redirect, but deny from user flags"))
 		}
 
 		if blinkResp.StatusCode >= 300 && blinkResp.StatusCode < 400 { // redirect
 			loc := blinkResp.Headers.Get("Location")
 			if loc == "" {
-				return blinkResp, redirectChain, fmt.Errorf("redirect with no Location header")
+				return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("redirect with no Location header"))
 			}
 
 			u, err := url.Parse(loc)
 			if err != nil {
-				return blinkResp, redirectChain, fmt.Errorf("invalid redirect Location")
+				return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("invalid redirect Location"))
 			}
-			if blinkResp.StatusCode == 302 || blinkResp.StatusCode == 303 {
+			if blinkResp.StatusCode == 302 || blinkResp.StatusCode == 303 || blinkResp.StatusCode == 301 {
 				currentMethod = "GET"
 				payloadReader = nil
 			} else {
@@ -176,11 +190,11 @@ func HttpRequest(method string, domain string, data string) (BlinkResponse, []Bl
 
 		}
 		if blinkResp.StatusCode < 300 || blinkResp.StatusCode >= 400 { // not redirect
-			return blinkResp, redirectChain, nil
+			return blinkResp, redirectChain, classifyNetworkError(nil)
 		}
 
 	}
-	return BlinkResponse{}, redirectChain, nil
+	return BlinkResponse{}, redirectChain, classifyNetworkError(nil)
 }
 
 func cleanOutput(bl BlinkResponse, mode int) {
@@ -221,7 +235,7 @@ func cleanOutput(bl BlinkResponse, mode int) {
 
 	} else {
 		out.WriteString(colorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
-		out.WriteString(Blue + "[ " + Reset + bl.URL + Blue + " ] " + Reset)
+		out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
 		out.WriteString(fmt.Sprintf("(%vms)\n", bl.RTT.Milliseconds()))
 
 	}
@@ -264,4 +278,52 @@ func makeBlinkResponce(resp *http.Response, rtt time.Duration) (BlinkResponse, e
 	blinkResp.BodyHash = fmt.Sprintf("%x", sum)
 
 	return blinkResp, nil
+}
+
+func classifyNetworkError(err error) BlinkError {
+	var be BlinkError
+
+	// nil error
+	if err == nil {
+		be.Stage = "OK"
+		be.Message = ""
+		return be
+	}
+
+	// Timeout
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		be.Stage = "Timeout"
+		be.Message = err.Error()
+		return be
+	}
+
+	// DNS
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		be.Stage = "DNS"
+		be.Message = dnsErr.Error()
+		return be
+	}
+
+	// TLS: CA unknown, expired, wrong host, etc
+	var uaErr x509.UnknownAuthorityError
+	if errors.As(err, &uaErr) {
+		be.Stage = "TLS"
+		be.Message = "TLS: unknown certificate authority"
+		return be
+	}
+
+	// Network issues (refused, unreachable)
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		be.Stage = "Network"
+		be.Message = opErr.Error()
+		return be
+	}
+
+	// Fallback
+	be.Stage = "Unknown"
+	be.Message = err.Error()
+	return be
 }
