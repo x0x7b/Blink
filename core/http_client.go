@@ -156,6 +156,10 @@ func makeBlinkResponce(resp *http.Response, timings NetworkTimings) (BlinkRespon
 	blinkResp.Timings = timings
 
 	// TLS
+
+	if resp.TLS != nil {
+		blinkResp.ALPN = resp.TLS.NegotiatedProtocol
+	}
 	blinkResp.TLSVersion = resp.TLS.Version
 	blinkResp.CipherSuite = resp.TLS.CipherSuite
 	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {

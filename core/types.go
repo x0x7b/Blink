@@ -42,6 +42,7 @@ type BlinkResponse struct {
 	CertIssuer    string
 	CertExpires   time.Time
 	Timings       NetworkTimings
+	ALPN          string
 }
 
 type BlinkError struct {

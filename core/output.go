@@ -61,6 +61,7 @@ func CleanOutput(bl BlinkResponse, mode int, fc FlagCondition) {
 		))
 
 		out.WriteString(Bold + "TLS:" + Reset + "\n")
+		out.WriteString(fmt.Sprintf("   alpn: %v\n", bl.ALPN))
 		out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
 		out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
 		out.WriteString(fmt.Sprintf("   Issuer:  %v\n", bl.CertIssuer))

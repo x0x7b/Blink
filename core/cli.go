@@ -48,5 +48,5 @@ func RunCLI() {
 			CleanOutput(redirect, 1, fc)
 		}
 	}
-	CleanOutput(response, 1, fc)
+	CleanOutput(response, 0, fc)
 }
