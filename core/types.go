@@ -41,9 +41,18 @@ type BlinkResponse struct {
 	CipherSuite   uint16
 	CertIssuer    string
 	CertExpires   time.Time
+	Timings       NetworkTimings
 }
 
 type BlinkError struct {
 	Stage   string // DNS, TCP, TLS, HTTP, REDIRECT, BODY, UNKNOWN, OK
 	Message string
+}
+
+type NetworkTimings struct {
+	dnsDuration time.Duration
+	tcpDuration time.Duration
+	tlsDuration time.Duration
+	ttfb        time.Duration
+	fullRtt     time.Duration
 }

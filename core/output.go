@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 func ColorStatus(code int) string {
@@ -18,25 +19,47 @@ func ColorStatus(code int) string {
 	}
 }
 
+func colorTime(timing time.Duration) string {
+	switch {
+	case timing < 150*time.Millisecond:
+		return Green
+	case timing >= 150*time.Microsecond:
+		return Yellow
+	case timing >= 300*time.Millisecond:
+		return Red
+	default:
+		return Red
+	}
+
+}
+
 func CleanOutput(bl BlinkResponse, mode int, fc FlagCondition) {
 	var out strings.Builder
 	if mode == 0 {
 
-		out.WriteString(Cyan + "[Blink] ===================================================================================\n" + Reset)
 		out.WriteString(fmt.Sprintf(
 			Bold+"method: "+Reset+"%s\n"+
 				Bold+"url:    "+Reset+"%s\n"+
 				Bold+"status: "+Reset+ColorStatus(bl.StatusCode)+"%d (%s)"+Reset+"\n"+
 				Bold+"proto:  "+Reset+"%s (%d.%d)\n"+
 				Bold+"rtt:    "+Reset+"%s\n"+
-				Bold+"length: "+Reset+"%d\n",
+				Bold+"  dns:    "+Reset+colorTime(bl.Timings.dnsDuration)+"%s\n"+Reset+
+				Bold+"  tcp:    "+Reset+colorTime(bl.Timings.tcpDuration)+"%s\n"+Reset+
+				Bold+"  tls:    "+Reset+colorTime(bl.Timings.tlsDuration)+"%s\n"+Reset+
+				Bold+"  ttfb:   "+Reset+colorTime(bl.Timings.ttfb)+"%s\n"+Reset+
+				Bold+"  length: "+Reset+"%d\n",
 			bl.Method,
 			bl.URL,
 			bl.StatusCode, bl.Status,
 			bl.Proto, bl.ProtoMajor, bl.ProtoMinor,
-			bl.RTT,
+			bl.Timings.fullRtt,
+			bl.Timings.dnsDuration,
+			bl.Timings.tcpDuration,
+			bl.Timings.tlsDuration,
+			bl.Timings.ttfb,
 			bl.ContentLength,
 		))
+
 		out.WriteString(Bold + "TLS:" + Reset + "\n")
 		out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
 		out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
@@ -57,7 +80,7 @@ func CleanOutput(bl BlinkResponse, mode int, fc FlagCondition) {
 	} else {
 		out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
 		out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
-		out.WriteString(fmt.Sprintf("(%vms)\n", bl.RTT.Milliseconds()))
+		out.WriteString(fmt.Sprintf("(%vms)\n", bl.Timings.fullRtt))
 
 	}
 	fmt.Print(out.String())
