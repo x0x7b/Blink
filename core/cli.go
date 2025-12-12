@@ -44,9 +44,8 @@ func RunCLI() {
 	}
 
 	if len(redirects) > 0 {
-		for _, redirect := range redirects {
-			CleanOutput(redirect, 1, fc)
-		}
+		CleanOutput(response, redirects, 2, fc)
+	} else {
+
 	}
-	CleanOutput(response, 0, fc)
 }

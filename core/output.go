@@ -33,12 +33,14 @@ func colorTime(timing time.Duration) string {
 
 }
 
-func CleanOutput(bl BlinkResponse, mode int, fc FlagCondition) {
+func CleanOutput(bl BlinkResponse, rc []BlinkResponse, mode int, fc FlagCondition) {
 	switch {
 	case mode == 0:
 		defaultOutput(bl, fc)
 	case mode == 1:
 		verboseOutput(bl, fc)
+	case mode == 2:
+		redirectChainOutput(rc, fc)
 	}
 }
 
@@ -95,4 +97,17 @@ func verboseOutput(bl BlinkResponse, fc FlagCondition) {
 	}
 
 	fmt.Print(out.String())
+}
+
+func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
+	var out strings.Builder
+	if len(redirects) > 0 {
+		for i, redirect := range redirects {
+			out.WriteString("[ " + string(i) + " ]")
+			out.WriteString(ColorStatus(redirect.StatusCode) + fmt.Sprintf("%v ", redirect.StatusCode) + Reset)
+			out.WriteString(Blue + "[ " + Reset + Cyan + redirect.Method + Reset + " " + redirect.URL + Blue + " ] " + Reset)
+			out.WriteString(fmt.Sprintf("(%vms)\n", redirect.Timings.fullRtt))
+		}
+	}
+
 }
