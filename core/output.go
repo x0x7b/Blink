@@ -34,56 +34,65 @@ func colorTime(timing time.Duration) string {
 }
 
 func CleanOutput(bl BlinkResponse, mode int, fc FlagCondition) {
-	var out strings.Builder
-	if mode == 0 {
-
-		out.WriteString(fmt.Sprintf(
-			Bold+"method: "+Reset+"%s\n"+
-				Bold+"url:    "+Reset+"%s\n"+
-				Bold+"status: "+Reset+ColorStatus(bl.StatusCode)+"%d (%s)"+Reset+"\n"+
-				Bold+"proto:  "+Reset+"%s (%d.%d)\n"+
-				Bold+"rtt:    "+Reset+"%s\n"+
-				Bold+"  dns:    "+Reset+colorTime(bl.Timings.dnsDuration)+"%s\n"+Reset+
-				Bold+"  tcp:    "+Reset+colorTime(bl.Timings.tcpDuration)+"%s\n"+Reset+
-				Bold+"  tls:    "+Reset+colorTime(bl.Timings.tlsDuration)+"%s\n"+Reset+
-				Bold+"  ttfb:   "+Reset+colorTime(bl.Timings.ttfb)+"%s\n"+Reset+
-				Bold+"  length: "+Reset+"%d\n",
-			bl.Method,
-			bl.URL,
-			bl.StatusCode, bl.Status,
-			bl.Proto, bl.ProtoMajor, bl.ProtoMinor,
-			bl.Timings.fullRtt,
-			bl.Timings.dnsDuration,
-			bl.Timings.tcpDuration,
-			bl.Timings.tlsDuration,
-			bl.Timings.ttfb,
-			bl.ContentLength,
-		))
-
-		out.WriteString(Bold + "TLS:" + Reset + "\n")
-		out.WriteString(fmt.Sprintf("   alpn: %v\n", bl.ALPN))
-		out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
-		out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
-		out.WriteString(fmt.Sprintf("   Issuer:  %v\n", bl.CertIssuer))
-		out.WriteString(fmt.Sprintf("   Expires: %v\n", bl.CertExpires))
-
-		out.WriteString(Bold + "headers:" + Reset + "\n")
-		for k, v := range bl.Headers {
-			out.WriteString(fmt.Sprintf("  "+Bold+"%s:"+Reset+" %s\n", k, v))
-		}
-
-		if fc.ShowBody {
-			out.WriteString("\n")
-			out.WriteString(bl.BodyPreview)
-			out.WriteString("\n")
-		}
-
-	} else {
-		out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
-		out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
-		out.WriteString(fmt.Sprintf("(%vms)\n", bl.Timings.fullRtt))
-
+	switch {
+	case mode == 0:
+		defaultOutput(bl, fc)
+	case mode == 1:
+		verboseOutput(bl, fc)
 	}
+}
+
+func defaultOutput(bl BlinkResponse, fc FlagCondition) {
+	var out strings.Builder
+	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
+	out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
+	out.WriteString(fmt.Sprintf("(%vms)\n", bl.Timings.fullRtt))
 	fmt.Print(out.String())
 
+}
+
+func verboseOutput(bl BlinkResponse, fc FlagCondition) {
+	var out strings.Builder
+	out.WriteString(fmt.Sprintf(
+		Bold+"method: "+Reset+"%s\n"+
+			Bold+"url:    "+Reset+"%s\n"+
+			Bold+"status: "+Reset+ColorStatus(bl.StatusCode)+"%d (%s)"+Reset+"\n"+
+			Bold+"proto:  "+Reset+"%s (%d.%d)\n"+
+			Bold+"rtt:    "+Reset+"%s\n"+
+			Bold+"  dns:    "+Reset+colorTime(bl.Timings.dnsDuration)+"%s\n"+Reset+
+			Bold+"  tcp:    "+Reset+colorTime(bl.Timings.tcpDuration)+"%s\n"+Reset+
+			Bold+"  tls:    "+Reset+colorTime(bl.Timings.tlsDuration)+"%s\n"+Reset+
+			Bold+"  ttfb:   "+Reset+colorTime(bl.Timings.ttfb)+"%s\n"+Reset+
+			Bold+"  length: "+Reset+"%d\n",
+		bl.Method,
+		bl.URL,
+		bl.StatusCode, bl.Status,
+		bl.Proto, bl.ProtoMajor, bl.ProtoMinor,
+		bl.Timings.fullRtt,
+		bl.Timings.dnsDuration,
+		bl.Timings.tcpDuration,
+		bl.Timings.tlsDuration,
+		bl.Timings.ttfb,
+		bl.ContentLength,
+	))
+
+	out.WriteString(Bold + "TLS:" + Reset + "\n")
+	out.WriteString(fmt.Sprintf("   alpn: %v\n", bl.ALPN))
+	out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
+	out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
+	out.WriteString(fmt.Sprintf("   Issuer:  %v\n", bl.CertIssuer))
+	out.WriteString(fmt.Sprintf("   Expires: %v\n", bl.CertExpires))
+
+	out.WriteString(Bold + "headers:" + Reset + "\n")
+	for k, v := range bl.Headers {
+		out.WriteString(fmt.Sprintf("  "+Bold+"%s:"+Reset+" %s\n", k, v))
+	}
+
+	if fc.ShowBody {
+		out.WriteString("\n")
+		out.WriteString(bl.BodyPreview)
+		out.WriteString("\n")
+	}
+
+	fmt.Print(out.String())
 }
