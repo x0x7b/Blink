@@ -110,7 +110,7 @@ func HttpRequest(method string, domain string, data string, fc FlagCondition) (B
 		}
 		resp.Body.Close()
 		if !fc.FollowRedirects {
-			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("handeled redirect, but deny from user flags"))
+			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("redirect received but not followed (--no-follow)"))
 		}
 
 		if blinkResp.StatusCode >= 300 && blinkResp.StatusCode < 400 { // redirect

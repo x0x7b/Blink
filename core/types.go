@@ -10,6 +10,7 @@ type FlagCondition struct {
 	FollowRedirects bool
 	MaxRedirects    int
 	Timeout         int
+	OutputMode      int
 }
 
 const (
@@ -46,7 +47,7 @@ type BlinkResponse struct {
 }
 
 type BlinkError struct {
-	Stage   string // DNS, TCP, TLS, HTTP, REDIRECT, BODY, UNKNOWN, OK
+	Stage   string // DNS, TCP, TLS, HTTP, REDIRECT, BODY, UNKNOWN, INFO, OK
 	Message string
 }
 

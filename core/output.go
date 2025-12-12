@@ -33,13 +33,15 @@ func colorTime(timing time.Duration) string {
 
 }
 
-func CleanOutput(bl BlinkResponse, rc []BlinkResponse, mode int, fc FlagCondition) {
+func CleanOutput(bl BlinkResponse, rc []BlinkResponse, fc FlagCondition) {
 	switch {
-	case mode == 0:
+	case fc.OutputMode == 0 && len(rc) > 0:
+		redirectChainOutput(rc, fc)
 		defaultOutput(bl, fc)
-	case mode == 1:
+	case fc.OutputMode == 1 && len(rc) > 0:
+		redirectChainOutput(rc, fc)
 		verboseOutput(bl, fc)
-	case mode == 2:
+	case fc.OutputMode == 2 && len(rc) > 0:
 		redirectChainOutput(rc, fc)
 	}
 }
@@ -48,13 +50,14 @@ func defaultOutput(bl BlinkResponse, fc FlagCondition) {
 	var out strings.Builder
 	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
 	out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
-	out.WriteString(fmt.Sprintf("(%vms)\n", bl.Timings.fullRtt))
+	out.WriteString(fmt.Sprintf("(%v)\n", bl.Timings.fullRtt))
 	fmt.Print(out.String())
 
 }
 
 func verboseOutput(bl BlinkResponse, fc FlagCondition) {
 	var out strings.Builder
+	out.WriteString(Cyan + Bold + "Final response: \n" + Reset)
 	out.WriteString(fmt.Sprintf(
 		Bold+"method: "+Reset+"%s\n"+
 			Bold+"url:    "+Reset+"%s\n"+
@@ -78,16 +81,16 @@ func verboseOutput(bl BlinkResponse, fc FlagCondition) {
 		bl.ContentLength,
 	))
 
-	out.WriteString(Bold + "TLS:" + Reset + "\n")
+	out.WriteString(Cyan + "TLS:" + Reset + "\n")
 	out.WriteString(fmt.Sprintf("   alpn: %v\n", bl.ALPN))
 	out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
 	out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
 	out.WriteString(fmt.Sprintf("   Issuer:  %v\n", bl.CertIssuer))
 	out.WriteString(fmt.Sprintf("   Expires: %v\n", bl.CertExpires))
 
-	out.WriteString(Bold + "headers:" + Reset + "\n")
+	out.WriteString(Cyan + "headers:" + Reset + "\n")
 	for k, v := range bl.Headers {
-		out.WriteString(fmt.Sprintf("  "+Bold+"%s:"+Reset+" %s\n", k, v))
+		out.WriteString(fmt.Sprintf("  "+Cyan+"%s:"+Reset+" %s\n", k, v))
 	}
 
 	if fc.ShowBody {
@@ -101,13 +104,45 @@ func verboseOutput(bl BlinkResponse, fc FlagCondition) {
 
 func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
 	var out strings.Builder
+	var stringWidth int
+	out.WriteString(Cyan + "Redirect chain:\n" + Reset)
 	if len(redirects) > 0 {
-		for i, redirect := range redirects {
-			out.WriteString("[ " + string(i) + " ]")
-			out.WriteString(ColorStatus(redirect.StatusCode) + fmt.Sprintf("%v ", redirect.StatusCode) + Reset)
-			out.WriteString(Blue + "[ " + Reset + Cyan + redirect.Method + Reset + " " + redirect.URL + Blue + " ] " + Reset)
-			out.WriteString(fmt.Sprintf("(%vms)\n", redirect.Timings.fullRtt))
+		var maxLenRequest int
+		for i, req := range redirects {
+			var outForLen strings.Builder
+			outForLen.WriteString(fmt.Sprintf("   [ %d ] ", i))
+			outForLen.WriteString(fmt.Sprintf("%v ", req.StatusCode))
+			outForLen.WriteString("[ " + req.Method + " " + req.URL + " ] ")
+			outForLen.WriteString(fmt.Sprintf("(%v)", req.Timings.fullRtt))
+			if len(outForLen.String()) > maxLenRequest {
+				maxLenRequest = len(outForLen.String())
+			}
+			stringWidth = maxLenRequest + 1
 		}
+
+		for i, redirect := range redirects {
+			var outString strings.Builder
+			var outNoColors strings.Builder
+			outString.WriteString(fmt.Sprintf("   [ %d ] ", i))
+			outString.WriteString(ColorStatus(redirect.StatusCode) + fmt.Sprintf("%v ", redirect.StatusCode) + Reset)
+			outString.WriteString(Blue + "[ " + Reset + Cyan + redirect.Method + Reset + " " + redirect.URL + Blue + " ] " + Reset)
+			outString.WriteString(fmt.Sprintf("(%v)", redirect.Timings.fullRtt))
+
+			outNoColors.WriteString(fmt.Sprintf("   [ %d ] ", i))
+			outNoColors.WriteString(fmt.Sprintf("%v ", redirect.StatusCode))
+			outNoColors.WriteString("[ " + redirect.Method + " " + redirect.URL + " ] ")
+			outNoColors.WriteString(fmt.Sprintf("(%v)", redirect.Timings.fullRtt))
+
+			spaces := stringWidth - len(outNoColors.String())
+			if spaces <= 0 {
+				spaces = 1
+			}
+			outString.WriteString(fmt.Sprintf("%v> %v\n", strings.Repeat(" ", spaces), redirect.Headers.Get("Location")))
+			out.WriteString(outString.String())
+		}
+	} else {
+		fmt.Println("No redirects")
 	}
+	fmt.Print(out.String())
 
 }

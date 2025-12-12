@@ -48,6 +48,12 @@ func classifyNetworkError(err error) BlinkError {
 		return be
 	}
 
+	if err.Error() == "redirect received but not followed (--no-follow)" {
+		be.Stage = "INFO"
+		be.Message = err.Error()
+		return be
+	}
+
 	// Fallback
 	be.Stage = "Unknown"
 	be.Message = err.Error()
