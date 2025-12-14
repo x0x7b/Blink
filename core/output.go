@@ -34,16 +34,17 @@ func colorTime(timing time.Duration) string {
 }
 
 func CleanOutput(bl BlinkResponse, rc []BlinkResponse, fc FlagCondition) {
-	switch {
-	case fc.OutputMode == 0 && len(rc) > 0:
-		redirectChainOutput(rc, fc)
-		defaultOutput(bl, fc)
-	case fc.OutputMode == 1 && len(rc) > 0:
-		redirectChainOutput(rc, fc)
-		verboseOutput(bl, fc)
-	case fc.OutputMode == 2 && len(rc) > 0:
+	if len(rc) > 0 {
 		redirectChainOutput(rc, fc)
 	}
+	switch {
+	case fc.OutputMode == 0:
+		fmt.Printf(Cyan + "Final response:\n" + Reset)
+		defaultOutput(bl, fc)
+	case fc.OutputMode == 1:
+		verboseOutput(bl, fc)
+	}
+
 }
 
 func defaultOutput(bl BlinkResponse, fc FlagCondition) {
@@ -51,7 +52,13 @@ func defaultOutput(bl BlinkResponse, fc FlagCondition) {
 	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
 	out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
 	out.WriteString(fmt.Sprintf("(%v)\n", bl.Timings.fullRtt))
+	if fc.ShowBody {
+		out.WriteString("\n")
+		out.WriteString(bl.BodyPreview)
+		out.WriteString("\n")
+	}
 	fmt.Print(out.String())
+	serverFingerprint(bl)
 
 }
 
@@ -145,4 +152,19 @@ func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
 	}
 	fmt.Print(out.String())
 
+}
+
+func serverFingerprint(bl BlinkResponse) {
+	var out strings.Builder
+	out.WriteString(Cyan + "\nServer Fingerprint:\n" + Reset)
+	out.WriteString("   Server: " + bl.Headers.Get("Server") + "\n")
+	if bl.Headers.Get("X-Powered-By") != "" {
+		out.WriteString(Cyan + "   Tech: " + Reset + bl.Headers.Get("X-Powered-By") + "\n")
+
+	}
+	if bl.Headers.Get("X-Frame-Options") == "" {
+		out.WriteString("   Missing X-Frame-Options header. (Clickjacking-related behavior)")
+	}
+
+	fmt.Println(out.String())
 }
