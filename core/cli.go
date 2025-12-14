@@ -21,8 +21,10 @@ func RunCLI() {
 	timeout := flag.Int("timeout", 5, "Seconds to timeout")
 
 	data := flag.String("data", "", "HTTP Payload")
+
 	flag.Parse()
 	var fc FlagCondition
+	fc.Data = *data
 	if *showBody || *showBody2 {
 		fc.ShowBody = true
 	} else if *showBodyLong {
@@ -38,7 +40,7 @@ func RunCLI() {
 	}
 
 	url := flag.Arg(0)
-	response, redirects, err := HttpRequest(*method, url, *data, fc)
+	response, redirects, err := HttpRequest(*method, url, fc)
 	if err.Stage != "OK" {
 		if err.Stage == "Unknown" {
 			fmt.Printf(Red+"[ %v ERROR ] %s\n"+Reset, err.Stage, err.Message)
@@ -56,4 +58,6 @@ func RunCLI() {
 	} else {
 		CleanOutput(response, redirects, fc)
 	}
+
+	tesUrlParam(response, fc)
 }

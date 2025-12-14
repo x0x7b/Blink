@@ -12,6 +12,7 @@ type FlagCondition struct {
 	Timeout         int
 	OutputMode      int
 	ShowFullBody    bool
+	Data            string
 }
 
 const (

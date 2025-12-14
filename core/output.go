@@ -205,6 +205,5 @@ func getQueryParam(bl BlinkResponse) (string, string) {
 	parts2 := strings.Split(parts1[len(parts1)-1], "?")
 	parts3 := strings.Split(parts2[len(parts2)-1], "=")
 	param, value := parts3[0], parts3[1]
-
 	return param, value
 }

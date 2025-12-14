@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func HttpRequest(method string, domain string, data string, fc FlagCondition) (BlinkResponse, []BlinkResponse, BlinkError) {
+func HttpRequest(method string, domain string, fc FlagCondition) (BlinkResponse, []BlinkResponse, BlinkError) {
 	current := domain
 	currentMethod := method
 	var redirectChain []BlinkResponse
@@ -67,13 +67,13 @@ func HttpRequest(method string, domain string, data string, fc FlagCondition) (B
 			},
 		}
 
-		if currentMethod == "GET" && data != "" {
+		if currentMethod == "GET" && fc.Data != "" {
 			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT"))
 		}
 
 		var payloadReader io.Reader
-		if data != "" {
-			payloadReader = strings.NewReader(data)
+		if fc.Data != "" {
+			payloadReader = strings.NewReader(fc.Data)
 		} else {
 			payloadReader = nil
 		}
@@ -84,7 +84,7 @@ func HttpRequest(method string, domain string, data string, fc FlagCondition) (B
 			return blinkResp, redirectChain, classifyNetworkError(err)
 		}
 
-		if data != "" {
+		if fc.Data != "" {
 			req.Header.Set("Content-Type", "application/json")
 
 		}
@@ -186,4 +186,11 @@ func makeBlinkResponce(resp *http.Response, timings NetworkTimings) (BlinkRespon
 	blinkResp.BodyHash = fmt.Sprintf("%x", sum)
 
 	return blinkResp, nil
+}
+
+func tesUrlParam(bl BlinkResponse, fc FlagCondition) {
+	_, value := getQueryParam(bl)
+	newURL := strings.Replace(bl.URL, value, "'", 1)
+	testpar, abcd, _ := HttpRequest(bl.Method, newURL, fc)
+	CleanOutput(testpar, abcd, fc)
 }
