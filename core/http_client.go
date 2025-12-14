@@ -144,6 +144,10 @@ func HttpRequest(method string, domain string, data string, fc FlagCondition) (B
 
 func makeBlinkResponce(resp *http.Response, timings NetworkTimings) (BlinkResponse, error) {
 	var blinkResp BlinkResponse
+
+	blinkResp.RawRequest = resp.Request
+	blinkResp.RawResponse = resp
+
 	blinkResp.Status = resp.Status
 	blinkResp.StatusCode = resp.StatusCode
 	blinkResp.Proto = resp.Proto

@@ -106,6 +106,7 @@ func verboseOutput(bl BlinkResponse, fc FlagCondition) {
 	out.WriteString(bodyOutput(bl, fc))
 	fmt.Print(out.String())
 	serverFingerprint(bl)
+	getQueryParam(bl)
 }
 
 func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
@@ -166,10 +167,12 @@ func serverFingerprint(bl BlinkResponse) {
 
 	}
 	if bl.Headers.Get("X-Frame-Options") == "" {
-		out.WriteString("   Missing X-Frame-Options header. (Clickjacking-related behavior)")
+		out.WriteString(Cyan + "   [INFO] " + Reset + "Missing X-Frame-Options header. (Clickjacking-related behavior)\n")
 	}
 	out.WriteString(Cyan + "Defined links: \n" + Reset)
 	out.WriteString(getLinks(bl))
+	param, value := getQueryParam(bl)
+	out.WriteString(fmt.Sprintf("Param: %v\nValue: %v\n", param, value))
 	fmt.Println(out.String())
 
 }
@@ -195,4 +198,13 @@ func bodyOutput(bl BlinkResponse, fc FlagCondition) string {
 		return string(bl.Body)
 	}
 	return ""
+}
+
+func getQueryParam(bl BlinkResponse) (string, string) {
+	parts1 := strings.Split(bl.URL, "/")
+	parts2 := strings.Split(parts1[len(parts1)-1], "?")
+	parts3 := strings.Split(parts2[len(parts2)-1], "=")
+	param, value := parts3[0], parts3[1]
+
+	return param, value
 }

@@ -46,6 +46,8 @@ type BlinkResponse struct {
 	CertExpires   time.Time
 	Timings       NetworkTimings
 	ALPN          string
+	RawRequest    *http.Request
+	RawResponse   *http.Response
 }
 
 type BlinkError struct {
