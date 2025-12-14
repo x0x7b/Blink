@@ -8,7 +8,8 @@ import (
 
 func RunCLI() {
 	showBody := flag.Bool("b", false, "Show response body")
-	showBodyLong := flag.Bool("include-body", false, "Show response body")
+	showBody2 := flag.Bool("body", false, "Show response body")
+	showBodyLong := flag.Bool("full-body", false, "Show response body")
 
 	method := flag.String("X", "GET", "HTTP method")
 
@@ -22,8 +23,10 @@ func RunCLI() {
 	data := flag.String("data", "", "HTTP Payload")
 	flag.Parse()
 	var fc FlagCondition
-	if *showBody || *showBodyLong {
+	if *showBody || *showBody2 {
 		fc.ShowBody = true
+	} else if *showBodyLong {
+		fc.ShowFullBody = true
 	}
 	fc.FollowRedirects = !*followRedirects
 	fc.MaxRedirects = *maxRedirects

@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -34,6 +35,7 @@ func colorTime(timing time.Duration) string {
 }
 
 func CleanOutput(bl BlinkResponse, rc []BlinkResponse, fc FlagCondition) {
+	fmt.Println(Magenta + "[ Blink v0.4 ]  \n" + Reset)
 	if len(rc) > 0 {
 		redirectChainOutput(rc, fc)
 	}
@@ -58,6 +60,7 @@ func defaultOutput(bl BlinkResponse, fc FlagCondition) {
 		out.WriteString("\n")
 	}
 	fmt.Print(out.String())
+	out.WriteString(bodyOutput(bl, fc))
 	serverFingerprint(bl)
 
 }
@@ -100,13 +103,9 @@ func verboseOutput(bl BlinkResponse, fc FlagCondition) {
 		out.WriteString(fmt.Sprintf("  "+Cyan+"%s:"+Reset+" %s\n", k, v))
 	}
 
-	if fc.ShowBody {
-		out.WriteString("\n")
-		out.WriteString(bl.BodyPreview)
-		out.WriteString("\n")
-	}
-
+	out.WriteString(bodyOutput(bl, fc))
 	fmt.Print(out.String())
+	serverFingerprint(bl)
 }
 
 func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
@@ -159,12 +158,41 @@ func serverFingerprint(bl BlinkResponse) {
 	out.WriteString(Cyan + "\nServer Fingerprint:\n" + Reset)
 	out.WriteString("   Server: " + bl.Headers.Get("Server") + "\n")
 	if bl.Headers.Get("X-Powered-By") != "" {
-		out.WriteString(Cyan + "   Tech: " + Reset + bl.Headers.Get("X-Powered-By") + "\n")
+		out.WriteString("   Tech: " + bl.Headers.Get("X-Powered-By") + "\n")
+
+	}
+	if bl.Headers.Get("X-Powered-CMS") != "" {
+		out.WriteString(Cyan + "   CMS: " + Reset + bl.Headers.Get("X-Powered-CMS") + "\n")
 
 	}
 	if bl.Headers.Get("X-Frame-Options") == "" {
 		out.WriteString("   Missing X-Frame-Options header. (Clickjacking-related behavior)")
 	}
-
+	out.WriteString(Cyan + "Defined links: \n" + Reset)
+	out.WriteString(getLinks(bl))
 	fmt.Println(out.String())
+
+}
+
+func getLinks(bl BlinkResponse) string {
+	var out strings.Builder
+	match, _ := regexp.MatchString(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`, string(bl.Body))
+	if !match {
+		return "No links in body."
+	}
+	r, _ := regexp.Compile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+	links := r.FindAllString(string(bl.Body), -1)
+	for _, link := range links {
+		out.WriteString(fmt.Sprintf("   %s\n", link))
+	}
+	return out.String()
+}
+
+func bodyOutput(bl BlinkResponse, fc FlagCondition) string {
+	if fc.ShowBody {
+		return bl.BodyPreview
+	} else if fc.ShowFullBody {
+		return string(bl.Body)
+	}
+	return ""
 }
