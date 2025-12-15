@@ -3,6 +3,7 @@ package scanners
 import (
 	"Blink/core"
 	"Blink/types"
+
 	"fmt"
 	"strings"
 )

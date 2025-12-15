@@ -198,7 +198,7 @@ func bodyOutput(bl types.BlinkResponse, fc types.FlagCondition) string {
 	return ""
 }
 
-func errorOutput(err types.BlinkError) string {
+func ErrorOutput(err types.BlinkError) string {
 	var out strings.Builder
 	if err.Stage != "OK" {
 		if err.Stage == "Unknown" {

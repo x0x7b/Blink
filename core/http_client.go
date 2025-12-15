@@ -2,6 +2,7 @@ package core
 
 import (
 	"Blink/types"
+
 	"crypto/sha256"
 	"crypto/tls"
 	"fmt"
@@ -69,7 +70,7 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 		}
 
 		if currentMethod == "GET" && fc.Data != "" {
-			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT"))
+			return blinkResp, redirectChain, ClassifyNetworkError(fmt.Errorf("GET request cannot have a body; use -X POST or -X PUT"))
 		}
 
 		var payloadReader io.Reader
@@ -82,7 +83,7 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 		req, err := http.NewRequest(currentMethod, current, payloadReader)
 		req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 		if err != nil {
-			return blinkResp, redirectChain, classifyNetworkError(err)
+			return blinkResp, redirectChain, ClassifyNetworkError(err)
 		}
 
 		if fc.Data != "" {
@@ -102,27 +103,27 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 		networkTimings.Ttfb = ttfb
 
 		if err != nil {
-			return blinkResp, redirectChain, classifyNetworkError(err)
+			return blinkResp, redirectChain, ClassifyNetworkError(err)
 		}
 
 		blinkResp, err = makeBlinkResponce(resp, networkTimings)
 		if err != nil {
-			return blinkResp, redirectChain, classifyNetworkError(err)
+			return blinkResp, redirectChain, ClassifyNetworkError(err)
 		}
 		resp.Body.Close()
 		if !fc.FollowRedirects {
-			return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("redirect received but not followed (--no-follow)"))
+			return blinkResp, redirectChain, ClassifyNetworkError(fmt.Errorf("redirect received but not followed (--no-follow)"))
 		}
 
 		if blinkResp.StatusCode >= 300 && blinkResp.StatusCode < 400 { // redirect
 			loc := blinkResp.Headers.Get("Location")
 			if loc == "" {
-				return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("redirect with no Location header"))
+				return blinkResp, redirectChain, ClassifyNetworkError(fmt.Errorf("redirect with no Location header"))
 			}
 
 			u, err := url.Parse(loc)
 			if err != nil {
-				return blinkResp, redirectChain, classifyNetworkError(fmt.Errorf("invalid redirect Location"))
+				return blinkResp, redirectChain, ClassifyNetworkError(fmt.Errorf("invalid redirect Location"))
 			}
 			if blinkResp.StatusCode == 302 || blinkResp.StatusCode == 303 || blinkResp.StatusCode == 301 {
 				currentMethod = "GET"
@@ -136,11 +137,11 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 
 		}
 		if blinkResp.StatusCode < 300 || blinkResp.StatusCode >= 400 { // not redirect
-			return blinkResp, redirectChain, classifyNetworkError(nil)
+			return blinkResp, redirectChain, ClassifyNetworkError(nil)
 		}
 
 	}
-	return types.BlinkResponse{}, redirectChain, classifyNetworkError(nil)
+	return types.BlinkResponse{}, redirectChain, ClassifyNetworkError(nil)
 }
 
 func makeBlinkResponce(resp *http.Response, timings types.NetworkTimings) (types.BlinkResponse, error) {

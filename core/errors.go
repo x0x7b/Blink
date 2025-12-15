@@ -7,7 +7,7 @@ import (
 	"net"
 )
 
-func classifyNetworkError(err error) types.BlinkError {
+func ClassifyNetworkError(err error) types.BlinkError {
 	var be types.BlinkError
 
 	// nil error
