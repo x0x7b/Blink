@@ -14,6 +14,7 @@ type FlagCondition struct {
 	ShowFullBody    bool
 	Data            string
 	TestParam       bool
+	ShowFp          bool
 }
 
 const (

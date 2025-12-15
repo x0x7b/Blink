@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	fmt.Println(types.Magenta + "[ Blink v0.4 ]  \n" + types.Reset)
+	fmt.Println(types.Magenta + "[ Blink v0.5 ]  \n" + types.Reset)
 	showBody := flag.Bool("b", false, "Show response body")
 	showBody2 := flag.Bool("body", false, "Show response body")
 	showBodyLong := flag.Bool("full-body", false, "Show response body")
@@ -27,6 +27,8 @@ func main() {
 	data := flag.String("data", "", "HTTP Payload")
 	testParam := flag.Bool("test-param", false, "Test URL param for vulns")
 
+	getSF := flag.Bool("get-sf", false, "Show server fingerprint")
+
 	flag.Parse()
 	var fc types.FlagCondition
 	fc.Data = *data
@@ -35,6 +37,7 @@ func main() {
 	} else if *showBodyLong {
 		fc.ShowFullBody = true
 	}
+	fc.ShowFp = *getSF
 	fc.FollowRedirects = !*followRedirects
 	fc.MaxRedirects = *maxRedirects
 	fc.Timeout = *timeout

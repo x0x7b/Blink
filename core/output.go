@@ -41,7 +41,6 @@ func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.Flag
 	}
 	switch {
 	case fc.OutputMode == 0:
-		fmt.Printf(types.Cyan + "Final response:\n" + types.Reset)
 		defaultOutput(bl, fc)
 	case fc.OutputMode == 1:
 		verboseOutput(bl, fc)
@@ -51,23 +50,24 @@ func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.Flag
 
 func defaultOutput(bl types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
+	if fc.OutputMode != 0 {
+		out.WriteString(types.Cyan + types.Bold + "Final response: \n" + types.Reset)
+	}
 	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + types.Reset)
 	out.WriteString(types.Blue + "[ " + types.Reset + types.Cyan + bl.Method + types.Reset + " " + bl.URL + types.Blue + " ] " + types.Reset)
 	out.WriteString(fmt.Sprintf("(%v)\n", bl.Timings.FullRtt))
-	if fc.ShowBody {
-		out.WriteString("\n")
-		out.WriteString(bl.BodyPreview)
-		out.WriteString("\n")
-	}
-	fmt.Print(out.String())
 	out.WriteString(bodyOutput(bl, fc))
 	serverFingerprint(bl, fc)
+	fmt.Print(out.String())
 
 }
 
 func verboseOutput(bl types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
-	out.WriteString(types.Cyan + types.Bold + "Final response: \n" + types.Reset)
+	if fc.OutputMode != 0 {
+		out.WriteString(types.Cyan + types.Bold + "Final response: \n" + types.Reset)
+	}
+
 	out.WriteString(fmt.Sprintf(
 		types.Bold+"method: "+types.Reset+"%s\n"+
 			types.Bold+"url:    "+types.Reset+"%s\n"+
@@ -155,6 +155,9 @@ func redirectChainOutput(redirects []types.BlinkResponse, fc types.FlagCondition
 
 func serverFingerprint(bl types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
+	if !fc.ShowFp {
+		return
+	}
 	out.WriteString(types.Cyan + "\nServer Fingerprint:\n" + types.Reset)
 	out.WriteString("   Server: " + bl.Headers.Get("Server") + "\n")
 	if bl.Headers.Get("X-Powered-By") != "" {

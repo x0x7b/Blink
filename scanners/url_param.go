@@ -24,7 +24,7 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkRes
 	}
 	new_value = "'"
 	newURL := strings.Replace(bl.URL, value, new_value, 1)
-	fmt.Printf("[INFO] Testing param %s\n", param)
+	fmt.Printf(types.Magenta+"[SCAN] Testing param %s\n"+types.Reset, param)
 	response, redirects, err = core.HttpRequest(bl.Method, newURL, fc)
 	return response, redirects, err
 }
