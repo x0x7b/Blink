@@ -1,6 +1,7 @@
 package core
 
 import (
+	"Blink/types"
 	"crypto/sha256"
 	"crypto/tls"
 	"fmt"
@@ -12,10 +13,10 @@ import (
 	"time"
 )
 
-func HttpRequest(method string, domain string, fc FlagCondition) (BlinkResponse, []BlinkResponse, BlinkError) {
+func HttpRequest(method string, domain string, fc types.FlagCondition) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
 	current := domain
 	currentMethod := method
-	var redirectChain []BlinkResponse
+	var redirectChain []types.BlinkResponse
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -25,8 +26,8 @@ func HttpRequest(method string, domain string, fc FlagCondition) (BlinkResponse,
 	}
 
 	for hop := 0; hop < fc.MaxRedirects; hop++ {
-		var networkTimings NetworkTimings
-		var blinkResp BlinkResponse
+		var networkTimings types.NetworkTimings
+		var blinkResp types.BlinkResponse
 		var dnsStart time.Time
 		var dnsDuration time.Duration
 		var connectStart time.Time
@@ -94,11 +95,11 @@ func HttpRequest(method string, domain string, fc FlagCondition) (BlinkResponse,
 		start = time.Now()
 		resp, err := client.Do(req)
 
-		networkTimings.fullRtt = time.Since(start)
-		networkTimings.dnsDuration = dnsDuration
-		networkTimings.tcpDuration = tcpDuration
-		networkTimings.tlsDuration = tlsDuration
-		networkTimings.ttfb = ttfb
+		networkTimings.FullRtt = time.Since(start)
+		networkTimings.DnsDuration = dnsDuration
+		networkTimings.TcpDuration = tcpDuration
+		networkTimings.TlsDuration = tlsDuration
+		networkTimings.Ttfb = ttfb
 
 		if err != nil {
 			return blinkResp, redirectChain, classifyNetworkError(err)
@@ -139,11 +140,11 @@ func HttpRequest(method string, domain string, fc FlagCondition) (BlinkResponse,
 		}
 
 	}
-	return BlinkResponse{}, redirectChain, classifyNetworkError(nil)
+	return types.BlinkResponse{}, redirectChain, classifyNetworkError(nil)
 }
 
-func makeBlinkResponce(resp *http.Response, timings NetworkTimings) (BlinkResponse, error) {
-	var blinkResp BlinkResponse
+func makeBlinkResponce(resp *http.Response, timings types.NetworkTimings) (types.BlinkResponse, error) {
+	var blinkResp types.BlinkResponse
 
 	blinkResp.RawRequest = resp.Request
 	blinkResp.RawResponse = resp
@@ -186,11 +187,4 @@ func makeBlinkResponce(resp *http.Response, timings NetworkTimings) (BlinkRespon
 	blinkResp.BodyHash = fmt.Sprintf("%x", sum)
 
 	return blinkResp, nil
-}
-
-func tesUrlParam(bl BlinkResponse, fc FlagCondition) {
-	_, value := getQueryParam(bl)
-	newURL := strings.Replace(bl.URL, value, "'", 1)
-	testpar, abcd, _ := HttpRequest(bl.Method, newURL, fc)
-	CleanOutput(testpar, abcd, fc)
 }

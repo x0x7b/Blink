@@ -1,6 +1,7 @@
 package core
 
 import (
+	"Blink/types"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,38 +11,37 @@ import (
 func ColorStatus(code int) string {
 	switch {
 	case code >= 200 && code < 300:
-		return Green
+		return types.Green
 	case code >= 300 && code < 400:
-		return Blue
+		return types.Blue
 	case code >= 400 && code < 500:
-		return Yellow
+		return types.Yellow
 	default:
-		return Red
+		return types.Red
 	}
 }
 
 func colorTime(timing time.Duration) string {
 	switch {
 	case timing < 150*time.Millisecond:
-		return Green
+		return types.Green
 	case timing >= 150*time.Microsecond:
-		return Yellow
+		return types.Yellow
 	case timing >= 300*time.Millisecond:
-		return Red
+		return types.Red
 	default:
-		return Red
+		return types.Red
 	}
 
 }
 
-func CleanOutput(bl BlinkResponse, rc []BlinkResponse, fc FlagCondition) {
-	fmt.Println(Magenta + "[ Blink v0.4 ]  \n" + Reset)
+func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.FlagCondition) {
 	if len(rc) > 0 {
 		redirectChainOutput(rc, fc)
 	}
 	switch {
 	case fc.OutputMode == 0:
-		fmt.Printf(Cyan + "Final response:\n" + Reset)
+		fmt.Printf(types.Cyan + "Final response:\n" + types.Reset)
 		defaultOutput(bl, fc)
 	case fc.OutputMode == 1:
 		verboseOutput(bl, fc)
@@ -49,11 +49,11 @@ func CleanOutput(bl BlinkResponse, rc []BlinkResponse, fc FlagCondition) {
 
 }
 
-func defaultOutput(bl BlinkResponse, fc FlagCondition) {
+func defaultOutput(bl types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
-	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + Reset)
-	out.WriteString(Blue + "[ " + Reset + Cyan + bl.Method + Reset + " " + bl.URL + Blue + " ] " + Reset)
-	out.WriteString(fmt.Sprintf("(%v)\n", bl.Timings.fullRtt))
+	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + types.Reset)
+	out.WriteString(types.Blue + "[ " + types.Reset + types.Cyan + bl.Method + types.Reset + " " + bl.URL + types.Blue + " ] " + types.Reset)
+	out.WriteString(fmt.Sprintf("(%v)\n", bl.Timings.FullRtt))
 	if fc.ShowBody {
 		out.WriteString("\n")
 		out.WriteString(bl.BodyPreview)
@@ -61,58 +61,57 @@ func defaultOutput(bl BlinkResponse, fc FlagCondition) {
 	}
 	fmt.Print(out.String())
 	out.WriteString(bodyOutput(bl, fc))
-	serverFingerprint(bl)
+	serverFingerprint(bl, fc)
 
 }
 
-func verboseOutput(bl BlinkResponse, fc FlagCondition) {
+func verboseOutput(bl types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
-	out.WriteString(Cyan + Bold + "Final response: \n" + Reset)
+	out.WriteString(types.Cyan + types.Bold + "Final response: \n" + types.Reset)
 	out.WriteString(fmt.Sprintf(
-		Bold+"method: "+Reset+"%s\n"+
-			Bold+"url:    "+Reset+"%s\n"+
-			Bold+"status: "+Reset+ColorStatus(bl.StatusCode)+"%d (%s)"+Reset+"\n"+
-			Bold+"proto:  "+Reset+"%s (%d.%d)\n"+
-			Bold+"rtt:    "+Reset+"%s\n"+
-			Bold+"  dns:    "+Reset+colorTime(bl.Timings.dnsDuration)+"%s\n"+Reset+
-			Bold+"  tcp:    "+Reset+colorTime(bl.Timings.tcpDuration)+"%s\n"+Reset+
-			Bold+"  tls:    "+Reset+colorTime(bl.Timings.tlsDuration)+"%s\n"+Reset+
-			Bold+"  ttfb:   "+Reset+colorTime(bl.Timings.ttfb)+"%s\n"+Reset+
-			Bold+"  length: "+Reset+"%d\n",
+		types.Bold+"method: "+types.Reset+"%s\n"+
+			types.Bold+"url:    "+types.Reset+"%s\n"+
+			types.Bold+"status: "+types.Reset+ColorStatus(bl.StatusCode)+"%d (%s)"+types.Reset+"\n"+
+			types.Bold+"proto:  "+types.Reset+"%s (%d.%d)\n"+
+			types.Bold+"rtt:    "+types.Reset+"%s\n"+
+			types.Bold+"  dns:    "+types.Reset+colorTime(bl.Timings.DnsDuration)+"%s\n"+types.Reset+
+			types.Bold+"  tcp:    "+types.Reset+colorTime(bl.Timings.TcpDuration)+"%s\n"+types.Reset+
+			types.Bold+"  tls:    "+types.Reset+colorTime(bl.Timings.TlsDuration)+"%s\n"+types.Reset+
+			types.Bold+"  ttfb:   "+types.Reset+colorTime(bl.Timings.Ttfb)+"%s\n"+types.Reset+
+			types.Bold+"  length: "+types.Reset+"%d\n",
 		bl.Method,
 		bl.URL,
 		bl.StatusCode, bl.Status,
 		bl.Proto, bl.ProtoMajor, bl.ProtoMinor,
-		bl.Timings.fullRtt,
-		bl.Timings.dnsDuration,
-		bl.Timings.tcpDuration,
-		bl.Timings.tlsDuration,
-		bl.Timings.ttfb,
+		bl.Timings.FullRtt,
+		bl.Timings.DnsDuration,
+		bl.Timings.TcpDuration,
+		bl.Timings.TlsDuration,
+		bl.Timings.Ttfb,
 		bl.ContentLength,
 	))
 
-	out.WriteString(Cyan + "TLS:" + Reset + "\n")
+	out.WriteString(types.Cyan + "TLS:" + types.Reset + "\n")
 	out.WriteString(fmt.Sprintf("   alpn: %v\n", bl.ALPN))
 	out.WriteString(fmt.Sprintf("   Version: %v\n", bl.TLSVersion))
 	out.WriteString(fmt.Sprintf("   Cipher:  %v\n", bl.CipherSuite))
 	out.WriteString(fmt.Sprintf("   Issuer:  %v\n", bl.CertIssuer))
 	out.WriteString(fmt.Sprintf("   Expires: %v\n", bl.CertExpires))
 
-	out.WriteString(Cyan + "headers:" + Reset + "\n")
+	out.WriteString(types.Cyan + "headers:" + types.Reset + "\n")
 	for k, v := range bl.Headers {
-		out.WriteString(fmt.Sprintf("  "+Cyan+"%s:"+Reset+" %s\n", k, v))
+		out.WriteString(fmt.Sprintf("  "+types.Cyan+"%s:"+types.Reset+" %s\n", k, v))
 	}
 
 	out.WriteString(bodyOutput(bl, fc))
 	fmt.Print(out.String())
-	serverFingerprint(bl)
-	getQueryParam(bl)
+	serverFingerprint(bl, fc)
 }
 
-func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
+func redirectChainOutput(redirects []types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
 	var stringWidth int
-	out.WriteString(Cyan + "Redirect chain:\n" + Reset)
+	out.WriteString(types.Cyan + "Redirect chain:\n" + types.Reset)
 	if len(redirects) > 0 {
 		var maxLenRequest int
 		for i, req := range redirects {
@@ -120,7 +119,7 @@ func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
 			outForLen.WriteString(fmt.Sprintf("   [ %d ] ", i))
 			outForLen.WriteString(fmt.Sprintf("%v ", req.StatusCode))
 			outForLen.WriteString("[ " + req.Method + " " + req.URL + " ] ")
-			outForLen.WriteString(fmt.Sprintf("(%v)", req.Timings.fullRtt))
+			outForLen.WriteString(fmt.Sprintf("(%v)", req.Timings.FullRtt))
 			if len(outForLen.String()) > maxLenRequest {
 				maxLenRequest = len(outForLen.String())
 			}
@@ -131,14 +130,14 @@ func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
 			var outString strings.Builder
 			var outNoColors strings.Builder
 			outString.WriteString(fmt.Sprintf("   [ %d ] ", i))
-			outString.WriteString(ColorStatus(redirect.StatusCode) + fmt.Sprintf("%v ", redirect.StatusCode) + Reset)
-			outString.WriteString(Blue + "[ " + Reset + Cyan + redirect.Method + Reset + " " + redirect.URL + Blue + " ] " + Reset)
-			outString.WriteString(fmt.Sprintf("(%v)", redirect.Timings.fullRtt))
+			outString.WriteString(ColorStatus(redirect.StatusCode) + fmt.Sprintf("%v ", redirect.StatusCode) + types.Reset)
+			outString.WriteString(types.Blue + "[ " + types.Reset + types.Cyan + redirect.Method + types.Reset + " " + redirect.URL + types.Blue + " ] " + types.Reset)
+			outString.WriteString(fmt.Sprintf("(%v)", redirect.Timings.FullRtt))
 
 			outNoColors.WriteString(fmt.Sprintf("   [ %d ] ", i))
 			outNoColors.WriteString(fmt.Sprintf("%v ", redirect.StatusCode))
 			outNoColors.WriteString("[ " + redirect.Method + " " + redirect.URL + " ] ")
-			outNoColors.WriteString(fmt.Sprintf("(%v)", redirect.Timings.fullRtt))
+			outNoColors.WriteString(fmt.Sprintf("(%v)", redirect.Timings.FullRtt))
 
 			spaces := stringWidth - len(outNoColors.String())
 			if spaces <= 0 {
@@ -154,30 +153,29 @@ func redirectChainOutput(redirects []BlinkResponse, fc FlagCondition) {
 
 }
 
-func serverFingerprint(bl BlinkResponse) {
+func serverFingerprint(bl types.BlinkResponse, fc types.FlagCondition) {
 	var out strings.Builder
-	out.WriteString(Cyan + "\nServer Fingerprint:\n" + Reset)
+	out.WriteString(types.Cyan + "\nServer Fingerprint:\n" + types.Reset)
 	out.WriteString("   Server: " + bl.Headers.Get("Server") + "\n")
 	if bl.Headers.Get("X-Powered-By") != "" {
 		out.WriteString("   Tech: " + bl.Headers.Get("X-Powered-By") + "\n")
 
 	}
 	if bl.Headers.Get("X-Powered-CMS") != "" {
-		out.WriteString(Cyan + "   CMS: " + Reset + bl.Headers.Get("X-Powered-CMS") + "\n")
+		out.WriteString(types.Cyan + "   CMS: " + types.Reset + bl.Headers.Get("X-Powered-CMS") + "\n")
 
 	}
 	if bl.Headers.Get("X-Frame-Options") == "" {
-		out.WriteString(Cyan + "   [INFO] " + Reset + "Missing X-Frame-Options header. (Clickjacking-related behavior)\n")
+		out.WriteString(types.Cyan + "   [INFO] " + types.Reset + "Missing X-Frame-Options header. (Clickjacking-related behavior)\n")
 	}
-	out.WriteString(Cyan + "Defined links: \n" + Reset)
+	out.WriteString(types.Cyan + "Defined links: \n" + types.Reset)
 	out.WriteString(getLinks(bl))
-	param, value := getQueryParam(bl)
-	out.WriteString(fmt.Sprintf("Param: %v\nValue: %v\n", param, value))
+
 	fmt.Println(out.String())
 
 }
 
-func getLinks(bl BlinkResponse) string {
+func getLinks(bl types.BlinkResponse) string {
 	var out strings.Builder
 	match, _ := regexp.MatchString(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`, string(bl.Body))
 	if !match {
@@ -191,7 +189,7 @@ func getLinks(bl BlinkResponse) string {
 	return out.String()
 }
 
-func bodyOutput(bl BlinkResponse, fc FlagCondition) string {
+func bodyOutput(bl types.BlinkResponse, fc types.FlagCondition) string {
 	if fc.ShowBody {
 		return bl.BodyPreview
 	} else if fc.ShowFullBody {
@@ -200,10 +198,17 @@ func bodyOutput(bl BlinkResponse, fc FlagCondition) string {
 	return ""
 }
 
-func getQueryParam(bl BlinkResponse) (string, string) {
-	parts1 := strings.Split(bl.URL, "/")
-	parts2 := strings.Split(parts1[len(parts1)-1], "?")
-	parts3 := strings.Split(parts2[len(parts2)-1], "=")
-	param, value := parts3[0], parts3[1]
-	return param, value
+func errorOutput(err types.BlinkError) string {
+	var out strings.Builder
+	if err.Stage != "OK" {
+		if err.Stage == "Unknown" {
+			out.WriteString(fmt.Sprintf(types.Red+"[ %v ERROR ] %s\n"+types.Reset, err.Stage, err.Message))
+		} else if err.Stage == "INFO" {
+			out.WriteString(fmt.Sprintf(types.Yellow+"[ %v ] %v"+types.Reset, err.Stage, err.Message))
+		} else {
+			out.WriteString(fmt.Sprintf(types.Red+"[ %v ERROR ]\n"+types.Reset, err.Stage))
+		}
+
+	}
+	return out.String()
 }

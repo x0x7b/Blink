@@ -1,13 +1,14 @@
 package core
 
 import (
+	"Blink/types"
 	"crypto/x509"
 	"errors"
 	"net"
 )
 
-func classifyNetworkError(err error) BlinkError {
-	var be BlinkError
+func classifyNetworkError(err error) types.BlinkError {
+	var be types.BlinkError
 
 	// nil error
 	if err == nil {
@@ -49,6 +50,11 @@ func classifyNetworkError(err error) BlinkError {
 	}
 
 	if err.Error() == "redirect received but not followed (--no-follow)" {
+		be.Stage = "INFO"
+		be.Message = err.Error()
+		return be
+	}
+	if err.Error() == "the parameter test flag is enabled, but no parameters were found in the specified url" {
 		be.Stage = "INFO"
 		be.Message = err.Error()
 		return be

@@ -1,12 +1,15 @@
 package core
 
 import (
+	"Blink/scanners"
+	"Blink/types"
 	"flag"
 	"fmt"
 	"log"
 )
 
 func RunCLI() {
+	fmt.Println(types.Magenta + "[ Blink v0.4 ]  \n" + types.Reset)
 	showBody := flag.Bool("b", false, "Show response body")
 	showBody2 := flag.Bool("body", false, "Show response body")
 	showBodyLong := flag.Bool("full-body", false, "Show response body")
@@ -21,9 +24,10 @@ func RunCLI() {
 	timeout := flag.Int("timeout", 5, "Seconds to timeout")
 
 	data := flag.String("data", "", "HTTP Payload")
+	testParam := flag.Bool("test-param", false, "Test URL param for vulns")
 
 	flag.Parse()
-	var fc FlagCondition
+	var fc types.FlagCondition
 	fc.Data = *data
 	if *showBody || *showBody2 {
 		fc.ShowBody = true
@@ -34,6 +38,7 @@ func RunCLI() {
 	fc.MaxRedirects = *maxRedirects
 	fc.Timeout = *timeout
 	fc.OutputMode = *outputMode
+	fc.TestParam = *testParam
 
 	if flag.NArg() < 1 {
 		log.Fatal("URL is required")
@@ -41,23 +46,14 @@ func RunCLI() {
 
 	url := flag.Arg(0)
 	response, redirects, err := HttpRequest(*method, url, fc)
-	if err.Stage != "OK" {
-		if err.Stage == "Unknown" {
-			fmt.Printf(Red+"[ %v ERROR ] %s\n"+Reset, err.Stage, err.Message)
-		} else if err.Stage == "INFO" {
-			fmt.Printf(Yellow+"[ %v ] %v"+Reset, err.Stage, err.Message)
-		} else {
-			fmt.Printf(Red+"[ %v ERROR ]\n"+Reset, err.Stage)
-		}
-
-		return
-	}
+	errorOutput(err)
 
 	if len(redirects) > 0 {
 		CleanOutput(response, redirects, fc)
 	} else {
 		CleanOutput(response, redirects, fc)
 	}
-
-	tesUrlParam(response, fc)
+	if fc.TestParam {
+		scanners.TesUrlParam(response, fc)
+	}
 }
