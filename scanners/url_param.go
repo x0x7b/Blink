@@ -5,43 +5,43 @@ import (
 	"Blink/types"
 	"bufio"
 	"log"
+	"net/url"
 	"os"
 
 	"fmt"
-	"strings"
 )
 
 func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
-	fmt.Printf(types.Magenta + "[SCAN] Testing param\n")
 	var response types.BlinkResponse
 	var redirects []types.BlinkResponse
 	var results []types.BlinkResponse
 	var err types.BlinkError
-	var new_value string
-	parts1 := strings.Split(bl.URL, "/")
-	parts2 := strings.Split(parts1[len(parts1)-1], "?")
-	parts3 := strings.Split(parts2[len(parts2)-1], "=")
-	var param, value string
-	if len(parts3) == 2 {
-		param, value = parts3[0], parts3[1]
-	} else {
+	// parts3 := strings.Split(parts2[len(parts2)-1], "=")
+	u, _ := url.Parse(bl.URL)
+	q := u.Query()
+	if len(q) == 0 {
 		return response, redirects, types.BlinkError{Message: "the parameter test flag is enabled, but no parameters were found in the specified url"}
 	}
 
-	file, errs := os.Open("wordlists\\urlparam.txt")
-	if errs != nil {
-		log.Printf(errs.Error())
-		return response, results, err
-	}
-	defer file.Close()
+	for param, _ := range q {
+		fmt.Printf("Testing %v\n", param)
+		file, ferr := os.Open("wordlists\\urlparam.txt")
+		if ferr != nil {
+			log.Printf("%s", ferr.Error())
+			return response, results, err
+		}
 
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		new_value = scanner.Text()
-		newURL := strings.Replace(bl.URL, value, new_value, 1)
-		fmt.Printf(types.Magenta+"[SCAN] Testing param %s with %s\n"+types.Reset, param, scanner.Text())
-		response, _, err = core.HttpRequest(bl.Method, newURL, fc)
-		results = append(results, response)
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			new_value := scanner.Text()
+			q.Set(param, new_value)
+			u.RawQuery = q.Encode()
+			newURL := u.String()
+			fmt.Printf(types.Magenta+"[SCAN] "+types.Reset+"Testing %s=%s\n"+types.Reset, param, scanner.Text())
+			response, _, err = core.HttpRequest(bl.Method, newURL, fc)
+			results = append(results, response)
+		}
+		file.Close()
 	}
 
 	return response, results, err
