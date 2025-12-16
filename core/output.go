@@ -3,6 +3,7 @@ package core
 import (
 	"Blink/types"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -36,8 +37,11 @@ func colorTime(timing time.Duration) string {
 }
 
 func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.FlagCondition) {
-	if len(rc) > 0 {
+	if len(rc) > 0 && bl.URL != "" {
 		redirectChainOutput(rc, fc)
+	}
+	if len(rc) > 0 && bl.URL == "" {
+		Diffs(rc)
 	}
 	switch {
 	case fc.OutputMode == 0:
@@ -214,4 +218,40 @@ func ErrorOutput(err types.BlinkError) string {
 
 	}
 	return out.String()
+}
+
+func Diffs(bl []types.BlinkResponse) {
+	var out strings.Builder
+	var baseline = bl[0]
+	for _, r := range bl[:] {
+		if baseline.StatusCode != r.StatusCode {
+			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"Status code:"+types.Reset+"%d > %d %s\n", baseline.StatusCode, r.StatusCode, r.URL))
+		}
+		if baseline.BodyHash != r.BodyHash {
+			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"Body Hash:"+types.Reset+"%v.. > %v.. %s\n", baseline.BodyHash[:10], r.BodyHash[:10], r.URL))
+		}
+		if diffHeaders(baseline.Headers, r.Headers) {
+			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"Headers:"+types.Reset+" %v.. > %v.. %s\n", baseline.Headers, r.Headers, r.URL))
+		}
+		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
+			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"RTT: "+types.Reset+"%v > %v %s\n", baseline.Timings.FullRtt, r.Timings.FullRtt, r.URL))
+		}
+
+	}
+	fmt.Println(out.String())
+}
+
+func diffHeaders(base, mod http.Header) bool {
+	interesting := []string{
+		"Content-Type",
+		"Location",
+		"X-Powered-By",
+	}
+
+	for _, h := range interesting {
+		if base.Get(h) != mod.Get(h) {
+			return true
+		}
+	}
+	return false
 }

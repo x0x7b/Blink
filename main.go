@@ -27,7 +27,7 @@ func main() {
 	data := flag.String("data", "", "HTTP Payload")
 	testParam := flag.Bool("test-param", false, "Test URL param for vulns")
 
-	getSF := flag.Bool("get-sf", false, "Show server fingerprint")
+	getSF := flag.Bool("fp", false, "Show server fingerprint")
 
 	flag.Parse()
 	var fc types.FlagCondition
@@ -58,8 +58,8 @@ func main() {
 		core.CleanOutput(response, redirects, fc)
 	}
 	if fc.TestParam {
-		result, redirects, err := scanners.TesUrlParam(response, fc)
+		_, results, err := scanners.TesUrlParam(response, fc)
 		core.ErrorOutput(err)
-		core.CleanOutput(result, redirects, fc)
+		core.CleanOutput(types.BlinkResponse{}, results, fc)
 	}
 }
