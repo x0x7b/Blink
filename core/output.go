@@ -43,6 +43,9 @@ func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.Flag
 	if len(rc) > 0 && bl.URL == "" {
 		Diffs(rc)
 	}
+	if bl.URL == "" {
+		return
+	}
 	switch {
 	case fc.OutputMode == 0:
 		defaultOutput(bl, fc)
