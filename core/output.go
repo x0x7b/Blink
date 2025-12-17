@@ -226,20 +226,58 @@ func ErrorOutput(err types.BlinkError) string {
 func Diffs(bl []types.BlinkResponse) {
 	var out strings.Builder
 	var baseline = bl[0]
-	for _, r := range bl[:] {
-		if baseline.StatusCode != r.StatusCode {
-			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"Status code:"+types.Reset+"%d > %d %s\n", baseline.StatusCode, r.StatusCode, r.URL))
+
+	if baseline.URL == "" {
+		fmt.Println("EMPTY BASELINE")
+		return
+	}
+	for _, r := range bl[1:] {
+		if r.URL == "" {
+			fmt.Println("EMPTY REQUEST")
+			continue
 		}
-		if baseline.BodyHash != r.BodyHash {
-			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"Body Hash:"+types.Reset+"%v.. > %v.. %s\n", baseline.BodyHash[:10], r.BodyHash[:10], r.URL))
-		}
-		if diffHeaders(baseline.Headers, r.Headers) {
-			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"Headers:"+types.Reset+" %v.. > %v.. %s\n", baseline.Headers, r.Headers, r.URL))
-		}
-		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
-			out.WriteString(fmt.Sprintf(types.Cyan+"[DIFF] "+types.Magenta+"RTT: "+types.Reset+"%v > %v %s\n", baseline.Timings.FullRtt, r.Timings.FullRtt, r.URL))
+		if r.Method == "POST" {
+			out.WriteString(types.Cyan + "[ INFO ] " + types.Reset + "Testing " + r.URL + " with " + r.RequestData + "\n")
+		} else {
+			out.WriteString(types.Cyan + "[ INFO ] " + types.Reset + "Testing " + r.URL + "\n")
 		}
 
+		if baseline.StatusCode != r.StatusCode {
+			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Status code:"+types.Reset+"%d > %d %s\n", baseline.StatusCode, r.StatusCode, r.URL))
+		}
+		if baseline.BodyHash != r.BodyHash {
+			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Body Hash:"+types.Reset+"%v.. > %v.. %s\n", baseline.BodyHash, r.BodyHash, r.URL))
+
+			parts := strings.FieldsFunc(r.RequestData, func(g rune) bool {
+				return g == '=' || g == '&'
+			})
+
+			if len(parts)%2 == 0 {
+				for i := 1; i < len(parts); i += 2 {
+					value := parts[i]
+					if strings.Contains(string(r.Body), value) {
+						out.WriteString(types.Cyan + "   [ REFLECT ]" + types.Reset + " Raw input reflected in response body\n")
+					}
+				}
+
+			}
+		}
+
+		if diffHeaders(baseline.Headers, r.Headers) {
+			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Headers:"+types.Reset+"  %s\n", r.URL))
+		}
+		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
+			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"RTT: "+types.Reset+"%v > %v %s\n", baseline.Timings.FullRtt, r.Timings.FullRtt, r.URL))
+		}
+		if len(baseline.Cookies) != len(r.Cookies) {
+			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Cookies:"+types.Reset+"%v > %v %s\n", baseline.Cookies, r.Cookies, r.URL))
+		}
+		if baseline.Redirected != r.Redirected {
+			out.WriteString(fmt.Sprintf(
+				types.Cyan+"   [ DIFF ] "+types.Magenta+"Redirect behavior:"+types.Reset+" %v > %v %s\n",
+				baseline.Redirected, r.Redirected, r.URL,
+			))
+		}
 	}
 	fmt.Println(out.String())
 }
@@ -249,6 +287,7 @@ func diffHeaders(base, mod http.Header) bool {
 		"Content-Type",
 		"Location",
 		"X-Powered-By",
+		"Set-Cookie",
 	}
 
 	for _, h := range interesting {

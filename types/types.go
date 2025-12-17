@@ -37,6 +37,7 @@ type BlinkResponse struct {
 	ProtoMajor    int
 	ProtoMinor    int
 	Headers       http.Header
+	Cookies       []*http.Cookie
 	Body          []byte
 	BodyPreview   string
 	BodyHash      string
@@ -52,6 +53,8 @@ type BlinkResponse struct {
 	ALPN          string
 	RawRequest    *http.Request
 	RawResponse   *http.Response
+	Redirected    bool
+	RequestData   string
 }
 
 type BlinkError struct {

@@ -67,6 +67,9 @@ func main() {
 	if fc.TestForms {
 		_, results, err := scanners.TestForms(response, fc)
 		core.ErrorOutput(err)
-		core.CleanOutput(types.BlinkResponse{}, results, fc)
+		for _, result := range results {
+			core.Diffs(result)
+		}
+
 	}
 }

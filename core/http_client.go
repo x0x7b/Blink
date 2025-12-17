@@ -93,7 +93,12 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 
 		req.Header.Set("User-Agent", "Blink/1.0")
 		req.Header.Set("Accept", "*/*")
+		if req.Method == "POST" {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		}
 		start = time.Now()
+
 		resp, err := client.Do(req)
 
 		networkTimings.FullRtt = time.Since(start)
@@ -110,6 +115,7 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 		if err != nil {
 			return blinkResp, redirectChain, ClassifyNetworkError(err)
 		}
+		blinkResp.RequestData = fc.Data
 		resp.Body.Close()
 		if !fc.FollowRedirects {
 			return blinkResp, redirectChain, ClassifyNetworkError(fmt.Errorf("redirect received but not followed (--no-follow)"))
@@ -160,6 +166,10 @@ func makeBlinkResponce(resp *http.Response, timings types.NetworkTimings) (types
 	blinkResp.Method = resp.Request.Method
 	blinkResp.URL = resp.Request.URL.String()
 	blinkResp.Timings = timings
+	blinkResp.Cookies = resp.Cookies()
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		blinkResp.Redirected = true
+	}
 
 	// TLS
 

@@ -1,27 +1,91 @@
 package scanners
 
 import (
+	"Blink/core"
 	"Blink/types"
-	"fmt"
+	"bufio"
+	"log"
+	"net/url"
+	"os"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
-func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
+func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.BlinkResponse, [][]types.BlinkResponse, types.BlinkError) {
 	var forms []types.Form
-	var response types.BlinkResponse
-	var results []types.BlinkResponse
+	response := types.BlinkResponse{}
+	var baselineSumb types.BlinkResponse
+	var results [][]types.BlinkResponse
 	parsed := strings.NewReader(string(baseline.Body))
 	doc, err := html.Parse(parsed)
 	if err != nil {
 		return response, results, types.BlinkError{Stage: "No"}
 	}
+	file, err := os.Open("wordlists\\urlparam.txt")
+	if err != nil {
+		log.Panic(err)
+	}
+	defer file.Close()
+	var payloads []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		payloads = append(payloads, scanner.Text())
+	}
 	parseForms(doc, &forms)
 	for _, form := range forms {
-		fmt.Printf("%v\n", form)
+		var formResult []types.BlinkResponse
+		baseURL, err := url.Parse(baseline.URL)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		newURLurl, err := baseURL.Parse(form.Action)
+		if err != nil {
+			log.Panic(err)
+		}
+		newURL := newURLurl.String()
+		values := make(url.Values)
+		for _, input := range form.Inputs {
+			values.Add(input.Name, "testvalue")
+		}
+		body := values.Encode()
+
+		fc2 := fc
+		fc2.FollowRedirects = false
+		fc2.Data = body
+		baselineSumb, _, errb := core.HttpRequest(form.Method, newURL, fc2)
+		if errb.Stage != "OK" && errb.Stage != "INFO" {
+			continue
+		}
+		core.ErrorOutput(errb)
+
+		formResult = append(formResult, baselineSumb)
+		for key := range values {
+			for _, payload := range payloads {
+				mut := make(url.Values)
+				for k, v := range values {
+					cp := make([]string, len(v))
+					copy(cp, v)
+					mut[k] = cp
+				}
+				mut.Set(key, payload)
+				fc2 := fc
+				fc2.FollowRedirects = false
+				fc2.Data = mut.Encode()
+				test, _, errb := core.HttpRequest(form.Method, newURL, fc2)
+				if errb.Stage != "OK" && errb.Stage != "INFO" {
+					continue
+				}
+				formResult = append(formResult, test)
+
+			}
+
+		}
+		results = append(results, formResult)
+
 	}
-	return response, results, types.BlinkError{Stage: "No"}
+	return baselineSumb, results, types.BlinkError{Stage: "OK"}
 }
 
 func parseForms(f *html.Node, forms *[]types.Form) {
@@ -40,11 +104,15 @@ func parseForm(n *html.Node) types.Form {
 			parsedForm.Name = a.Val
 		}
 		if a.Key == "method" {
-			parsedForm.Method = a.Val
+			parsedForm.Method = strings.ToUpper(a.Val)
 		}
 		if a.Key == "action" {
 			parsedForm.Action = a.Val
 		}
+
+	}
+	if parsedForm.Method == "" {
+		parsedForm.Method = "GET"
 	}
 	for c := range n.Descendants() {
 		if c.Type == html.ElementNode && c.Data == "input" {
@@ -57,7 +125,10 @@ func parseForm(n *html.Node) types.Form {
 					input.Type = b.Val
 				}
 			}
-			inputs = append(inputs, input)
+			if input.Name != "" && input.Type != "submit" && input.Type != "button" && input.Type != "image" {
+				inputs = append(inputs, input)
+			}
+
 		}
 	}
 	parsedForm.Inputs = inputs
