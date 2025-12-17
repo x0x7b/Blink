@@ -25,7 +25,8 @@ func main() {
 	timeout := flag.Int("timeout", 5, "Seconds to timeout")
 
 	data := flag.String("data", "", "HTTP Payload")
-	testParam := flag.Bool("test-param", false, "Test URL param for vulns")
+	urlParam := flag.Bool("url-params", false, "Test URL param for vulns")
+	forms := flag.Bool("forms", false, "Test forms on page")
 
 	getSF := flag.Bool("fp", false, "Show server fingerprint")
 
@@ -42,7 +43,8 @@ func main() {
 	fc.MaxRedirects = *maxRedirects
 	fc.Timeout = *timeout
 	fc.OutputMode = *outputMode
-	fc.TestParam = *testParam
+	fc.TestParam = *urlParam
+	fc.TestForms = *forms
 
 	if flag.NArg() < 1 {
 		log.Fatal("URL is required")
@@ -59,6 +61,11 @@ func main() {
 	}
 	if fc.TestParam {
 		_, results, err := scanners.TesUrlParam(response, fc)
+		core.ErrorOutput(err)
+		core.CleanOutput(types.BlinkResponse{}, results, fc)
+	}
+	if fc.TestForms {
+		_, results, err := scanners.TestForms(response, fc)
 		core.ErrorOutput(err)
 		core.CleanOutput(types.BlinkResponse{}, results, fc)
 	}

@@ -14,6 +14,7 @@ type FlagCondition struct {
 	ShowFullBody    bool
 	Data            string
 	TestParam       bool
+	TestForms       bool
 	ShowFp          bool
 }
 
@@ -64,4 +65,16 @@ type NetworkTimings struct {
 	TlsDuration time.Duration
 	Ttfb        time.Duration
 	FullRtt     time.Duration
+}
+
+type Form struct {
+	Name   string
+	Method string
+	Action string
+	Inputs []Input
+}
+
+type Input struct {
+	Name string
+	Type string
 }
