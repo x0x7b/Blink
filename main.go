@@ -6,11 +6,10 @@ import (
 	"Blink/types"
 	"flag"
 	"fmt"
-	"log"
 )
 
 func main() {
-	fmt.Println(types.Magenta + "[ Blink v0.5 ]  \n" + types.Reset)
+
 	showBody := flag.Bool("b", false, "Show response body")
 	showBody2 := flag.Bool("body", false, "Show response body")
 	showBodyLong := flag.Bool("full-body", false, "Show response body")
@@ -60,7 +59,17 @@ func main() {
 	}
 
 	if flag.NArg() < 1 {
-		log.Fatal("URL is required")
+		fmt.Printf(`
+    ____  ___       __  
+   / __ )/ (_)___  / /__
+  / __  / / / __ \/ //_/
+ / /_/ / / / / / / ,<   
+/_____/_/_/_/ /_/_/|_|  `)
+		fmt.Println(types.Magenta + "[ v0.5 ]  \n" + types.Reset)
+		fmt.Println(types.Yellow + "[INFO] " + types.Reset + "Use -help to see available options." + types.Reset)
+		return
+	} else {
+		fmt.Println(types.Magenta + "[ Blink v0.5 ]  \n" + types.Reset)
 	}
 
 	url := flag.Arg(0)
