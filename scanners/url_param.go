@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-
-	"fmt"
 )
 
 func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
@@ -24,7 +22,6 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkRes
 	}
 
 	for param, _ := range q {
-		fmt.Printf("Testing %v\n", param)
 		file, ferr := os.Open("wordlists\\urlparam.txt")
 		if ferr != nil {
 			log.Printf("%s", ferr.Error())
@@ -37,7 +34,6 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkRes
 			q.Set(param, new_value)
 			u.RawQuery = q.Encode()
 			newURL := u.String()
-			fmt.Printf(types.Magenta+"[SCAN] "+types.Reset+"Testing %s=%s\n"+types.Reset, param, scanner.Text())
 			response, _, err = core.HttpRequest(bl.Method, newURL, fc)
 			results = append(results, response)
 		}

@@ -231,7 +231,7 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 		fmt.Println("EMPTY BASELINE")
 		return
 	}
-	fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
+
 	for _, r := range bl[1:] {
 		var out strings.Builder
 		hasDiff := false
@@ -308,7 +308,12 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 					_ = 0
 				}
 			} else {
-				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
+				if r.Method == "POST" {
+					fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
+				} else {
+					fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RawRequest.URL.RawQuery+types.Reset+" "+r.RequestData+"\n")
+				}
+
 			}
 			fmt.Println(out.String())
 		}

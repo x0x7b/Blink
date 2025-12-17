@@ -80,6 +80,7 @@ func main() {
 	if fc.TestForms {
 		_, results, err := scanners.TestForms(response, fc)
 		core.ErrorOutput(err)
+		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		for _, result := range results {
 			fmt.Println()
 			core.Diffs(result, fc)
