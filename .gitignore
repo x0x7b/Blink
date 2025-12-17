@@ -1,1 +1,13 @@
+# binaries
 *.exe
+*.out
+*.bin
+
+# go build
+/bin/
+/dist/
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
