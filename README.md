@@ -1,4 +1,5 @@
 # Blink
+![status](https://img.shields.io/badge/status-pre--1.0-lightgrey)
 
 Blink is a diff-based HTTP analysis tool focused on detecting behavioral changes
 between baseline and injected requests.
