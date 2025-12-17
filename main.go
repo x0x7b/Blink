@@ -30,6 +30,9 @@ func main() {
 
 	getSF := flag.Bool("fp", false, "Show server fingerprint")
 
+	defaultMode := flag.Bool("default", true, "Default mode for diffs show")
+	verboseMode := flag.Bool("verbose", false, "Verbose mode for diffs show")
+
 	flag.Parse()
 	var fc types.FlagCondition
 	fc.Data = *data
@@ -45,6 +48,16 @@ func main() {
 	fc.OutputMode = *outputMode
 	fc.TestParam = *urlParam
 	fc.TestForms = *forms
+
+	if *defaultMode {
+		fc.DiffDefault = true
+	}
+
+	if !*verboseMode {
+		fc.DiffDefault = true
+	} else {
+		fc.DiffVerbose = true
+	}
 
 	if flag.NArg() < 1 {
 		log.Fatal("URL is required")
@@ -68,7 +81,8 @@ func main() {
 		_, results, err := scanners.TestForms(response, fc)
 		core.ErrorOutput(err)
 		for _, result := range results {
-			core.Diffs(result)
+			fmt.Println()
+			core.Diffs(result, fc)
 		}
 
 	}

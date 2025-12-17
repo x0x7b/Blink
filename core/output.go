@@ -41,7 +41,7 @@ func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.Flag
 		redirectChainOutput(rc, fc)
 	}
 	if len(rc) > 0 && bl.URL == "" {
-		Diffs(rc)
+		Diffs(rc, fc)
 	}
 	if bl.URL == "" {
 		return
@@ -223,30 +223,35 @@ func ErrorOutput(err types.BlinkError) string {
 	return out.String()
 }
 
-func Diffs(bl []types.BlinkResponse) {
-	var out strings.Builder
+func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
+
 	var baseline = bl[0]
 
 	if baseline.URL == "" {
 		fmt.Println("EMPTY BASELINE")
 		return
 	}
+	fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 	for _, r := range bl[1:] {
+		var out strings.Builder
+		hasDiff := false
 		if r.URL == "" {
 			fmt.Println("EMPTY REQUEST")
 			continue
 		}
-		if r.Method == "POST" {
-			out.WriteString(types.Cyan + "[ INFO ] " + types.Reset + "Testing " + r.URL + " with " + r.RequestData + "\n")
-		} else {
-			out.WriteString(types.Cyan + "[ INFO ] " + types.Reset + "Testing " + r.URL + "\n")
-		}
 
 		if baseline.StatusCode != r.StatusCode {
-			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Status code:"+types.Reset+"%d > %d %s\n", baseline.StatusCode, r.StatusCode, r.URL))
+			diffLine(&out, "status",
+				fmt.Sprintf("%d -> %d", baseline.StatusCode, r.StatusCode), fc,
+			)
+			hasDiff = true
 		}
+
 		if baseline.BodyHash != r.BodyHash {
-			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Body Hash:"+types.Reset+"%v.. > %v.. %s\n", baseline.BodyHash, r.BodyHash, r.URL))
+			diffLine(&out, "body_hash",
+				fmt.Sprintf("%v.. -> %v..", shortHash(baseline.BodyHash), shortHash(r.BodyHash)), fc,
+			)
+			hasDiff = true
 
 			parts := strings.FieldsFunc(r.RequestData, func(g rune) bool {
 				return g == '=' || g == '&'
@@ -256,30 +261,60 @@ func Diffs(bl []types.BlinkResponse) {
 				for i := 1; i < len(parts); i += 2 {
 					value := parts[i]
 					if strings.Contains(string(r.Body), value) {
-						out.WriteString(types.Cyan + "   [ REFLECT ]" + types.Reset + " Raw input reflected in response body\n")
+						if fc.DiffVerbose {
+							out.WriteString(
+								types.Cyan + "          [ REFLECT ]" + types.Reset +
+									" raw input reflected\n",
+							)
+						} else {
+							diffLine(&out, "reflect", "raw input", fc)
+							hasDiff = true
+						}
+
 					}
 				}
-
 			}
 		}
 
 		if diffHeaders(baseline.Headers, r.Headers) {
-			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Headers:"+types.Reset+"  %s\n", r.URL))
+			diffLine(&out, "headers", "", fc)
+			hasDiff = true
 		}
+
 		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
-			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"RTT: "+types.Reset+"%v > %v %s\n", baseline.Timings.FullRtt, r.Timings.FullRtt, r.URL))
+			diffLine(&out, "rtt",
+				fmt.Sprintf("%v -> %v",
+					baseline.Timings.FullRtt,
+					r.Timings.FullRtt,
+				), fc,
+			)
+			hasDiff = true
 		}
+
 		if len(baseline.Cookies) != len(r.Cookies) {
-			out.WriteString(fmt.Sprintf(types.Cyan+"   [ DIFF ] "+types.Magenta+"Cookies:"+types.Reset+"%v > %v %s\n", baseline.Cookies, r.Cookies, r.URL))
+			diffLine(&out, "cookies",
+				fmt.Sprintf("%d -> %d",
+					len(baseline.Cookies),
+					len(r.Cookies),
+				), fc,
+			)
+			hasDiff = true
 		}
-		if baseline.Redirected != r.Redirected {
-			out.WriteString(fmt.Sprintf(
-				types.Cyan+"   [ DIFF ] "+types.Magenta+"Redirect behavior:"+types.Reset+" %v > %v %s\n",
-				baseline.Redirected, r.Redirected, r.URL,
-			))
+		if hasDiff {
+			if fc.DiffVerbose {
+				if r.Method == "POST" {
+					fmt.Printf("%s", types.Magenta+"[SCAN] "+types.Reset+"Testing  "+r.RequestData+"\n")
+				} else {
+					_ = 0
+				}
+			} else {
+				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
+			}
+			fmt.Println(out.String())
 		}
+
 	}
-	fmt.Println(out.String())
+
 }
 
 func diffHeaders(base, mod http.Header) bool {
@@ -296,4 +331,28 @@ func diffHeaders(base, mod http.Header) bool {
 		}
 	}
 	return false
+}
+func diffLine(out *strings.Builder, field string, msg string, fc types.FlagCondition) {
+	if fc.DiffVerbose {
+		out.WriteString(fmt.Sprintf(
+			types.Cyan+"   [ DIFF ] "+types.Magenta+"%-14s"+types.Reset+" : %s\n",
+			field,
+			msg,
+		))
+	} else {
+		out.WriteString(fmt.Sprintf(
+			types.Magenta+"    %s"+types.Reset+" : %s\n",
+			field,
+			msg,
+		))
+	}
+
+}
+
+func shortHash(hash string) string {
+	if hash != "" {
+		return hash[:10]
+	} else {
+		return "EMPTY_HASH"
+	}
 }

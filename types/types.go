@@ -16,6 +16,8 @@ type FlagCondition struct {
 	TestParam       bool
 	TestForms       bool
 	ShowFp          bool
+	DiffDefault     bool
+	DiffVerbose     bool
 }
 
 const (
