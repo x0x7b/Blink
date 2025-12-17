@@ -275,9 +275,9 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 				}
 			}
 		}
-
-		if diffHeaders(baseline.Headers, r.Headers) {
-			diffLine(&out, "headers", "", fc)
+		headersChanges := diffHeaders(baseline.Headers, r.Headers)
+		if len(headersChanges) > 0 {
+			diffLine(&out, "headers", strings.Join(headersChanges, ", "), fc)
 			hasDiff = true
 		}
 
@@ -322,20 +322,20 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 
 }
 
-func diffHeaders(base, mod http.Header) bool {
+func diffHeaders(base, mod http.Header) []string {
 	interesting := []string{
 		"Content-Type",
 		"Location",
 		"X-Powered-By",
 		"Set-Cookie",
 	}
-
+	var changes []string
 	for _, h := range interesting {
 		if base.Get(h) != mod.Get(h) {
-			return true
+			changes = append(changes, h)
 		}
 	}
-	return false
+	return changes
 }
 func diffLine(out *strings.Builder, field string, msg string, fc types.FlagCondition) {
 	if fc.DiffVerbose {
