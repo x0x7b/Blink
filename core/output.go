@@ -4,6 +4,7 @@ import (
 	"Blink/types"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -216,7 +217,7 @@ func ErrorOutput(err types.BlinkError) string {
 		} else if err.Stage == "INFO" {
 			out.WriteString(fmt.Sprintf(types.Yellow+"[ %v ] %v"+types.Reset, err.Stage, err.Message))
 		} else {
-			out.WriteString(fmt.Sprintf(types.Red+"[ %v ERROR ]\n"+types.Reset, err.Stage))
+			out.WriteString(fmt.Sprintf(types.Red+"[ %v ERROR ] %v \n"+types.Reset, err.Stage, err.Message))
 		}
 
 	}
@@ -224,7 +225,6 @@ func ErrorOutput(err types.BlinkError) string {
 }
 
 func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
-
 	var baseline = bl[0]
 
 	if baseline.URL == "" {
@@ -271,6 +271,19 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 							hasDiff = true
 						}
 
+					}
+					fmt.Println("PAYLOAD:", value)
+					fmt.Println("BODY:", string(r.Body))
+					if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
+						if fc.DiffVerbose {
+							out.WriteString(
+								types.Cyan + "          [ REFLECT ]" + types.Reset +
+									" encoded input reflected\n",
+							)
+						} else {
+							diffLine(&out, "reflect", "encoded input", fc)
+							hasDiff = true
+						}
 					}
 				}
 			}

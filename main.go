@@ -83,12 +83,19 @@ func main() {
 	}
 	if fc.TestParam {
 		_, results, err := scanners.TesUrlParam(response, fc)
-		core.ErrorOutput(err)
-		core.CleanOutput(types.BlinkResponse{}, results, fc)
+		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
+		if err.Stage != "OK" {
+			fmt.Println(core.ErrorOutput(err))
+			return
+		}
+		core.Diffs(results, fc)
 	}
 	if fc.TestForms {
 		_, results, err := scanners.TestForms(response, fc)
-		core.ErrorOutput(err)
+		if err.Stage != "OK" {
+			fmt.Println(core.ErrorOutput(err))
+			return
+		}
 		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		for _, result := range results {
 			fmt.Println()
