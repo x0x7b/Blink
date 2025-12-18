@@ -265,8 +265,6 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 						hasDiff = true
 
 					}
-					fmt.Println("PAYLOAD:", value)
-					fmt.Println("BODY:", string(r.Body))
 					if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
 
 						diffLine(&out, "reflect", "encoded input", fc)
@@ -302,17 +300,14 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 			hasDiff = true
 		}
 		if hasDiff {
+			if r.Method == "POST" {
+				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
 			} else {
-				if r.Method == "POST" {
-					fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
-				} else {
-					fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RawRequest.URL.RawQuery+types.Reset+" "+r.RequestData+"\n")
-				}
-
+				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RawRequest.URL.RawQuery+types.Reset+" "+r.RequestData+"\n")
 			}
-			fmt.Println(out.String())
-		}
 
+		}
+		fmt.Println(out.String())
 	}
 
 }
@@ -333,6 +328,16 @@ func diffHeaders(base, mod http.Header) []string {
 	return changes
 }
 func diffLine(out *strings.Builder, field string, msg string, fc types.FlagCondition) {
+	if fc.IgnoreHash {
+		if field == "body_hash" {
+			return
+		}
+	}
+	if fc.IgnoreReflection {
+		if field == "reflect" {
+			return
+		}
+	}
 	out.WriteString(fmt.Sprintf(
 		types.Magenta+"    %s"+types.Reset+" : %s\n",
 		field,
