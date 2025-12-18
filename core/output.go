@@ -261,29 +261,17 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 				for i := 1; i < len(parts); i += 2 {
 					value := parts[i]
 					if strings.Contains(string(r.Body), value) {
-						if fc.DiffVerbose {
-							out.WriteString(
-								types.Cyan + "          [ REFLECT ]" + types.Reset +
-									" raw input reflected\n",
-							)
-						} else {
-							diffLine(&out, "reflect", "raw input", fc)
-							hasDiff = true
-						}
+						diffLine(&out, "reflect", "raw input", fc)
+						hasDiff = true
 
 					}
 					fmt.Println("PAYLOAD:", value)
 					fmt.Println("BODY:", string(r.Body))
 					if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
-						if fc.DiffVerbose {
-							out.WriteString(
-								types.Cyan + "          [ REFLECT ]" + types.Reset +
-									" encoded input reflected\n",
-							)
-						} else {
-							diffLine(&out, "reflect", "encoded input", fc)
-							hasDiff = true
-						}
+
+						diffLine(&out, "reflect", "encoded input", fc)
+						hasDiff = true
+
 					}
 				}
 			}
@@ -314,12 +302,6 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 			hasDiff = true
 		}
 		if hasDiff {
-			if fc.DiffVerbose {
-				if r.Method == "POST" {
-					fmt.Printf("%s", types.Magenta+"[SCAN] "+types.Reset+"Testing  "+r.RequestData+"\n")
-				} else {
-					_ = 0
-				}
 			} else {
 				if r.Method == "POST" {
 					fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
@@ -351,20 +333,11 @@ func diffHeaders(base, mod http.Header) []string {
 	return changes
 }
 func diffLine(out *strings.Builder, field string, msg string, fc types.FlagCondition) {
-	if fc.DiffVerbose {
-		out.WriteString(fmt.Sprintf(
-			types.Cyan+"   [ DIFF ] "+types.Magenta+"%-14s"+types.Reset+" : %s\n",
-			field,
-			msg,
-		))
-	} else {
-		out.WriteString(fmt.Sprintf(
-			types.Magenta+"    %s"+types.Reset+" : %s\n",
-			field,
-			msg,
-		))
-	}
-
+	out.WriteString(fmt.Sprintf(
+		types.Magenta+"    %s"+types.Reset+" : %s\n",
+		field,
+		msg,
+	))
 }
 
 func shortHash(hash string) string {

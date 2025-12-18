@@ -6,18 +6,18 @@ import (
 )
 
 type FlagCondition struct {
-	ShowBody        bool
-	FollowRedirects bool
-	MaxRedirects    int
-	Timeout         int
-	OutputMode      int
-	ShowFullBody    bool
-	Data            string
-	TestParam       bool
-	TestForms       bool
-	ShowFp          bool
-	DiffDefault     bool
-	DiffVerbose     bool
+	ShowBody         bool
+	FollowRedirects  bool
+	MaxRedirects     int
+	Timeout          int
+	OutputMode       int
+	ShowFullBody     bool
+	Data             string
+	TestParam        bool
+	TestForms        bool
+	ShowFp           bool
+	IgnoreHash       bool
+	IgnoreReflection bool
 }
 
 const (

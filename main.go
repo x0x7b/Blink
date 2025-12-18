@@ -29,8 +29,8 @@ func main() {
 
 	getSF := flag.Bool("fp", false, "Show server fingerprint")
 
-	defaultMode := flag.Bool("default", true, "Default mode for diffs show")
-	verboseMode := flag.Bool("verbose", false, "Verbose mode for diffs show")
+	ignoreHash := flag.Bool("ignore-hash", false, "Ignore hash diffs")
+	ignoreReflection := flag.Bool("ignore-reflection", false, "Ignore reflections")
 
 	flag.Parse()
 	var fc types.FlagCondition
@@ -47,16 +47,8 @@ func main() {
 	fc.OutputMode = *outputMode
 	fc.TestParam = *urlParam
 	fc.TestForms = *forms
-
-	if *defaultMode {
-		fc.DiffDefault = true
-	}
-
-	if !*verboseMode {
-		fc.DiffDefault = true
-	} else {
-		fc.DiffVerbose = true
-	}
+	fc.IgnoreHash = *ignoreHash
+	fc.IgnoreReflection = *ignoreReflection
 
 	if flag.NArg() < 1 {
 		fmt.Printf(`
