@@ -20,24 +20,27 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkRes
 	if len(q) == 0 {
 		return response, redirects, types.BlinkError{Message: "the parameter test flag is enabled, but no parameters were found in the specified url"}
 	}
+	file, ferr := os.Open(fc.Wordlist)
+	if ferr != nil {
+		log.Printf("%s", ferr.Error())
+		return response, results, err
+	}
 
+	var payloads []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		payloads = append(payloads, scanner.Text())
+	}
+	file.Close()
 	for param, _ := range q {
-		file, ferr := os.Open(fc.Wordlist)
-		if ferr != nil {
-			log.Printf("%s", ferr.Error())
-			return response, results, err
-		}
-
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			new_value := scanner.Text()
+		for _, payload := range payloads {
+			new_value := payload
 			q.Set(param, new_value)
 			u.RawQuery = q.Encode()
 			newURL := u.String()
 			response, _, err = core.HttpRequest(bl.Method, newURL, fc)
 			results = append(results, response)
 		}
-		file.Close()
 	}
 
 	return response, results, err

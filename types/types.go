@@ -84,3 +84,10 @@ type Input struct {
 	Name string
 	Type string
 }
+
+type Progress struct {
+	Stage   string
+	Current int
+	Total   int
+	Target  string
+}
