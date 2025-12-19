@@ -22,7 +22,7 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.Blin
 	if err != nil {
 		return response, results, types.BlinkError{Stage: "No"}
 	}
-	file, err := os.Open("wordlists\\urlparam.txt")
+	file, err := os.Open(fc.Wordlist)
 	if err != nil {
 		log.Panic(err)
 	}

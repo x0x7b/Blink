@@ -18,6 +18,7 @@ type FlagCondition struct {
 	ShowFp           bool
 	IgnoreHash       bool
 	IgnoreReflection bool
+	Wordlist         string
 }
 
 const (

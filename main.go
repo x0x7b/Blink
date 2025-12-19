@@ -31,6 +31,7 @@ func main() {
 
 	ignoreHash := flag.Bool("ignore-hash", false, "Ignore hash diffs")
 	ignoreReflection := flag.Bool("ignore-reflection", false, "Ignore reflections")
+	wordlist := flag.String("wordlist", "wordlists\\urlparam.txt", "Wordlist for testing")
 
 	flag.Parse()
 	var fc types.FlagCondition
@@ -49,6 +50,7 @@ func main() {
 	fc.TestForms = *forms
 	fc.IgnoreHash = *ignoreHash
 	fc.IgnoreReflection = *ignoreReflection
+	fc.Wordlist = (*wordlist)
 
 	if flag.NArg() < 1 {
 		fmt.Printf(`

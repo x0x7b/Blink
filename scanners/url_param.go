@@ -22,7 +22,7 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkRes
 	}
 
 	for param, _ := range q {
-		file, ferr := os.Open("wordlists\\urlparam.txt")
+		file, ferr := os.Open(fc.Wordlist)
 		if ferr != nil {
 			log.Printf("%s", ferr.Error())
 			return response, results, err
