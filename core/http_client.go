@@ -91,7 +91,7 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 
 		}
 
-		req.Header.Set("User-Agent", "Blink/1.0")
+		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 10.5; x64; en-US) AppleWebKit/534.43 (KHTML, like Gecko) Chrome/55.0.1548.378 Safari/533.7 Edge/10.43567")
 		req.Header.Set("Accept", "*/*")
 		if req.Method == "POST" {
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")

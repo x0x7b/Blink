@@ -9,12 +9,13 @@ import (
 	"os"
 )
 
-func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
+func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition, report func(types.Progress)) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
 	var response types.BlinkResponse
 	var redirects []types.BlinkResponse
 	var results []types.BlinkResponse
 	var err types.BlinkError
 	// parts3 := strings.Split(parts2[len(parts2)-1], "=")
+
 	u, _ := url.Parse(bl.URL)
 	q := u.Query()
 	if len(q) == 0 {
@@ -33,12 +34,22 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition) (types.BlinkRes
 	}
 	file.Close()
 	for param, _ := range q {
-		for _, payload := range payloads {
+		for i, payload := range payloads {
 			new_value := payload
 			q.Set(param, new_value)
 			u.RawQuery = q.Encode()
 			newURL := u.String()
+			if report != nil {
+				report(types.Progress{
+					Stage:   "URL_PARAMS",
+					Target:  param,
+					Current: i + 1,
+					Total:   len(payloads),
+				})
+			}
+
 			response, _, err = core.HttpRequest(bl.Method, newURL, fc)
+
 			results = append(results, response)
 		}
 	}

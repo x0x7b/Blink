@@ -76,7 +76,7 @@ func main() {
 		core.CleanOutput(response, redirects, fc)
 	}
 	if fc.TestParam {
-		_, results, err := scanners.TesUrlParam(response, fc)
+		_, results, err := scanners.TesUrlParam(response, fc, core.Report)
 		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		if err.Stage != "OK" {
 			fmt.Println(core.ErrorOutput(err))
