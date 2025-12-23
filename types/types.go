@@ -91,3 +91,28 @@ type Progress struct {
 	Total   int
 	Target  string
 }
+
+type BehaviorProfile struct {
+	TotalTests int
+	Counts     map[DiffKind]int
+}
+
+type Diff struct {
+	Kind   DiffKind
+	Before string
+	After  string
+	Meta   string
+}
+
+type TestResult struct {
+	Payload string
+	Diffs   []Diff
+}
+type DiffKind int
+
+const (
+	DiffBodyHash DiffKind = iota
+	DiffStatus
+	DiffRTT
+	DiffReflect
+)

@@ -233,7 +233,8 @@ func ErrorOutput(err types.BlinkError) string {
 
 func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 	var baseline = bl[0]
-
+	var profile types.BehaviorProfile
+	profile.TotalTests = len(bl)
 	if baseline.URL == "" {
 		fmt.Println("EMPTY BASELINE")
 		return
@@ -273,7 +274,6 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 
 					}
 					if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
-
 						diffLine(&out, "reflect", "encoded input", fc)
 						hasDiff = true
 
