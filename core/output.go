@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 func ColorStatus(code int) string {
@@ -179,7 +180,7 @@ func serverFingerprint(bl types.BlinkResponse, fc types.FlagCondition) {
 	if bl.Headers.Get("X-Frame-Options") == "" {
 		out.WriteString(types.Cyan + "   [INFO] " + types.Reset + "Missing X-Frame-Options header. (Clickjacking-related behavior)\n")
 	}
-	out.WriteString(types.Cyan + "Defined links: \n" + types.Reset)
+	out.WriteString(types.Cyan + "Defined endpoints: \n" + types.Reset)
 	out.WriteString(getLinks(bl))
 
 	fmt.Println(out.String())
@@ -188,14 +189,20 @@ func serverFingerprint(bl types.BlinkResponse, fc types.FlagCondition) {
 
 func getLinks(bl types.BlinkResponse) string {
 	var out strings.Builder
-	match, _ := regexp.MatchString(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`, string(bl.Body))
-	if !match {
-		return "No links in body."
+	parsed := strings.NewReader(string(bl.Body))
+	doc, err := html.Parse(parsed)
+	if err != nil {
+		ErrorOutput(types.BlinkError{Message: err.Error()})
+		return out.String()
 	}
-	r, _ := regexp.Compile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
-	links := r.FindAllString(string(bl.Body), -1)
-	for _, link := range links {
-		out.WriteString(fmt.Sprintf("   %s\n", link))
+	for n := range doc.Descendants() {
+		if n.Type == html.ElementNode && n.Data == "a" {
+			for _, a := range n.Attr {
+				if a.Key == "href" {
+					out.WriteString(a.Val + "\n")
+				}
+			}
+		}
 	}
 	return out.String()
 }
