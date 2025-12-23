@@ -4,7 +4,6 @@ import (
 	"Blink/core"
 	"Blink/types"
 	"bufio"
-	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -20,11 +19,11 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.Blin
 	parsed := strings.NewReader(string(baseline.Body))
 	doc, err := html.Parse(parsed)
 	if err != nil {
-		return response, results, types.BlinkError{Stage: "No"}
+		return response, results, types.BlinkError{Message: err.Error()}
 	}
 	file, err := os.Open(fc.Wordlist)
 	if err != nil {
-		log.Panic(err)
+		return response, results, types.BlinkError{Message: err.Error()}
 	}
 	defer file.Close()
 	var payloads []string
@@ -37,12 +36,12 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.Blin
 		var formResult []types.BlinkResponse
 		baseURL, err := url.Parse(baseline.URL)
 		if err != nil {
-			log.Panic(err)
+			return response, results, types.BlinkError{Message: err.Error()}
 		}
 
 		newURLurl, err := baseURL.Parse(form.Action)
 		if err != nil {
-			log.Panic(err)
+			return response, results, types.BlinkError{Message: err.Error()}
 		}
 		newURL := newURLurl.String()
 		values := make(url.Values)
