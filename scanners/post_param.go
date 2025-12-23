@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.BlinkResponse, [][]types.BlinkResponse, types.BlinkError) {
+func TestForms(baseline types.BlinkResponse, fc types.FlagCondition, report func(types.Progress)) (types.BlinkResponse, [][]types.BlinkResponse, types.BlinkError) {
 	var forms []types.Form
 	response := types.BlinkResponse{}
 	var baselineSumb types.BlinkResponse
@@ -58,10 +58,9 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.Blin
 			continue
 		}
 		core.ErrorOutput(errb)
-
 		formResult = append(formResult, baselineSumb)
 		for key := range values {
-			for _, payload := range payloads {
+			for i, payload := range payloads {
 				mut := make(url.Values)
 				for k, v := range values {
 					cp := make([]string, len(v))
@@ -72,6 +71,14 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition) (types.Blin
 				fc2 := fc
 				fc2.FollowRedirects = false
 				fc2.Data = mut.Encode()
+				if report != nil {
+					report(types.Progress{
+						Stage:   "URL_PARAMS",
+						Current: i + 1,
+						Target:  form.Name,
+						Total:   len(payloads),
+					})
+				}
 				test, _, errb := core.HttpRequest(form.Method, newURL, fc2)
 				if errb.Stage != "OK" && errb.Stage != "INFO" {
 					continue

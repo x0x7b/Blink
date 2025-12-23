@@ -305,9 +305,9 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
 			} else {
 				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RawRequest.URL.RawQuery+types.Reset+" "+r.RequestData+"\n")
 			}
-
+			fmt.Println(out.String())
 		}
-		fmt.Println(out.String())
+
 	}
 
 }
@@ -371,9 +371,8 @@ func RenderProgress(p types.Progress) {
 
 	barWidth := 24
 	filled := int(percent / 100 * float64(barWidth))
-
 	fmt.Printf(
-		"\r[%s:%s] [%s%s] %5.2f%% | %.1fk/s",
+		"\r\033[K[%s:%s] [%s%s] %5.2f%% | %.1fk/s",
 		p.Stage,
 		p.Target,
 		strings.Repeat("█", filled),
@@ -381,4 +380,7 @@ func RenderProgress(p types.Progress) {
 		percent,
 		speed/1000,
 	)
+	if percent == 100 {
+		fmt.Print("\r\033[K")
+	}
 }
