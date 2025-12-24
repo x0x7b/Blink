@@ -1,0 +1,33 @@
+package output
+
+import (
+	"Blink/types"
+	"time"
+)
+
+func ColorStatus(code int) string {
+	switch {
+	case code >= 200 && code < 300:
+		return types.Green
+	case code >= 300 && code < 400:
+		return types.Blue
+	case code >= 400 && code < 500:
+		return types.Yellow
+	default:
+		return types.Red
+	}
+}
+
+func colorTime(timing time.Duration) string {
+	switch {
+	case timing < 150*time.Millisecond:
+		return types.Green
+	case timing >= 150*time.Microsecond:
+		return types.Yellow
+	case timing >= 300*time.Millisecond:
+		return types.Red
+	default:
+		return types.Red
+	}
+
+}

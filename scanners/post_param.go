@@ -2,6 +2,7 @@ package scanners
 
 import (
 	"Blink/core"
+	"Blink/output"
 	"Blink/types"
 	"bufio"
 	"net/url"
@@ -57,7 +58,7 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition, report func
 		if errb.Stage != "OK" && errb.Stage != "INFO" {
 			continue
 		}
-		core.ErrorOutput(errb)
+		output.ErrorOutput(errb)
 		formResult = append(formResult, baselineSumb)
 		for key := range values {
 			for i, payload := range payloads {

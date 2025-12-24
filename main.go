@@ -2,6 +2,7 @@ package main
 
 import (
 	"Blink/core"
+	"Blink/output"
 	"Blink/scanners"
 	"Blink/types"
 	"flag"
@@ -68,26 +69,26 @@ func main() {
 
 	url := flag.Arg(0)
 	response, redirects, err := core.HttpRequest(*method, url, fc)
-	core.ErrorOutput(err)
+	output.ErrorOutput(err)
 
 	if len(redirects) > 0 {
-		core.CleanOutput(response, redirects, fc)
+		output.CleanOutput(response, redirects, fc)
 	} else {
-		core.CleanOutput(response, redirects, fc)
+		output.CleanOutput(response, redirects, fc)
 	}
 	if fc.TestParam {
-		_, results, err := scanners.TesUrlParam(response, fc, core.Report)
+		_, results, err := scanners.TesUrlParam(response, fc, output.Report)
 		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		if err.Stage != "OK" {
-			fmt.Println(core.ErrorOutput(err))
+			fmt.Println(output.ErrorOutput(err))
 			return
 		}
 		core.Diffs(results, fc)
 	}
 	if fc.TestForms {
-		_, results, err := scanners.TestForms(response, fc, core.Report)
+		_, results, err := scanners.TestForms(response, fc, output.Report)
 		if err.Stage != "OK" {
-			fmt.Println(core.ErrorOutput(err))
+			fmt.Println(output.ErrorOutput(err))
 			return
 		}
 		fmt.Printf(types.Yellow + "\n[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
