@@ -106,8 +106,10 @@ type Diff struct {
 
 type TestResult struct {
 	Payload string
+	Path    string
 	Diffs   []Diff
 }
+
 type DiffKind int
 
 const (
@@ -115,4 +117,6 @@ const (
 	DiffStatus
 	DiffRTT
 	DiffReflect
+	DiffHeaders
+	DiffCookies
 )

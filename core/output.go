@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -231,92 +232,67 @@ func ErrorOutput(err types.BlinkError) string {
 	return out.String()
 }
 
-func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) {
-	var baseline = bl[0]
-	var profile types.BehaviorProfile
-	profile.TotalTests = len(bl)
-	if baseline.URL == "" {
-		fmt.Println("EMPTY BASELINE")
-		return
+func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult {
+	var results []types.TestResult
+	if len(bl) == 0 {
+		return results
 	}
-
+	var baseline = bl[0]
+	// var profile types.BehaviorProfile
+	// profile.TotalTests = len(bl)
+	if baseline.URL == "" {
+		return results
+	}
 	for _, r := range bl[1:] {
-		var out strings.Builder
-		hasDiff := false
+		var res types.TestResult
+		res.Payload = r.RequestData
+		res.Path = r.RawRequest.URL.Path
 		if r.URL == "" {
-			fmt.Println("EMPTY REQUEST")
 			continue
 		}
 
 		if baseline.StatusCode != r.StatusCode {
-			diffLine(&out, "status",
-				fmt.Sprintf("%d -> %d", baseline.StatusCode, r.StatusCode), fc,
-			)
-			hasDiff = true
+			res.Diffs = append(res.Diffs, diffLine(types.DiffStatus, strconv.Itoa(baseline.StatusCode), strconv.Itoa(r.StatusCode), fc))
 		}
 
 		if baseline.BodyHash != r.BodyHash {
-			diffLine(&out, "body_hash",
-				fmt.Sprintf("%v.. -> %v..", shortHash(baseline.BodyHash), shortHash(r.BodyHash)), fc,
-			)
-			hasDiff = true
+			res.Diffs = append(res.Diffs, diffLine(types.DiffBodyHash, shortHash(baseline.BodyHash), shortHash(r.BodyHash), fc))
+		}
 
-			parts := strings.FieldsFunc(r.RequestData, func(g rune) bool {
-				return g == '=' || g == '&'
-			})
+		parts := strings.FieldsFunc(r.RequestData, func(g rune) bool {
+			return g == '=' || g == '&'
+		})
 
-			if len(parts)%2 == 0 {
-				for i := 1; i < len(parts); i += 2 {
-					value := parts[i]
-					if strings.Contains(string(r.Body), value) {
-						diffLine(&out, "reflect", "raw input", fc)
-						hasDiff = true
-
-					}
-					if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
-						diffLine(&out, "reflect", "encoded input", fc)
-						hasDiff = true
-
-					}
+		if len(parts)%2 == 0 {
+			for i := 1; i < len(parts); i += 2 {
+				value := parts[i]
+				if strings.Contains(string(r.Body), value) {
+					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "raw input reflected", fc))
 				}
+
+				if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
+					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "encoded input reflected", fc))
+				}
+
 			}
 		}
+
 		headersChanges := diffHeaders(baseline.Headers, r.Headers)
 		if len(headersChanges) > 0 {
-			diffLine(&out, "headers", strings.Join(headersChanges, ", "), fc)
-			hasDiff = true
+			res.Diffs = append(res.Diffs, diffLine(types.DiffHeaders, "", strings.Join(headersChanges, ", "), fc))
 		}
 
 		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
-			diffLine(&out, "rtt",
-				fmt.Sprintf("%v -> %v",
-					baseline.Timings.FullRtt,
-					r.Timings.FullRtt,
-				), fc,
-			)
-			hasDiff = true
+			res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(baseline.Timings.FullRtt), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
 		}
 
 		if len(baseline.Cookies) != len(r.Cookies) {
-			diffLine(&out, "cookies",
-				fmt.Sprintf("%d -> %d",
-					len(baseline.Cookies),
-					len(r.Cookies),
-				), fc,
-			)
-			hasDiff = true
-		}
-		if hasDiff {
-			if r.Method == "POST" {
-				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RequestData+"\n")
-			} else {
-				fmt.Printf("  %s", types.Cyan+r.RawRequest.URL.Path+types.Reset+" "+r.RawRequest.URL.RawQuery+types.Reset+" "+r.RequestData+"\n")
-			}
-			fmt.Println(out.String())
+			res.Diffs = append(res.Diffs, diffLine(types.DiffCookies, strconv.Itoa(len(baseline.Cookies)), strconv.Itoa(len(r.Cookies)), fc))
 		}
 
+		results = append(results, res)
 	}
-
+	return results
 }
 
 func diffHeaders(base, mod http.Header) []string {
@@ -334,22 +310,23 @@ func diffHeaders(base, mod http.Header) []string {
 	}
 	return changes
 }
-func diffLine(out *strings.Builder, field string, msg string, fc types.FlagCondition) {
+func diffLine(field types.DiffKind, bfr string, afr string, fc types.FlagCondition) types.Diff {
+	var diff types.Diff
 	if fc.IgnoreHash {
-		if field == "body_hash" {
-			return
+		if field == types.DiffBodyHash {
+			return diff
 		}
 	}
 	if fc.IgnoreReflection {
-		if field == "reflect" {
-			return
+		if field == types.DiffReflect {
+			return diff
 		}
 	}
-	out.WriteString(fmt.Sprintf(
-		types.Magenta+"    %s"+types.Reset+" : %s\n",
-		field,
-		msg,
-	))
+
+	diff.Kind = field
+	diff.Before = bfr
+	diff.After = afr
+	return diff
 }
 
 func shortHash(hash string) string {
