@@ -120,3 +120,22 @@ const (
 	DiffHeaders
 	DiffCookies
 )
+
+func (k DiffKind) String() string {
+	switch k {
+	case DiffBodyHash:
+		return "BODY_HASH"
+	case DiffStatus:
+		return "STATUS"
+	case DiffRTT:
+		return "RTT"
+	case DiffReflect:
+		return "REFLECT"
+	case DiffHeaders:
+		return "HEADERS"
+	case DiffCookies:
+		return "COOKIES"
+	default:
+		return "UNKNOWN"
+	}
+}

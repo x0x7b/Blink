@@ -93,7 +93,9 @@ func main() {
 		}
 		fmt.Printf(types.Yellow + "\n[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		for _, result := range results {
-			core.Diffs(result, fc)
+			results := core.Diffs(result, fc)
+			output.DiffsOutput(results)
+
 		}
 
 	}
