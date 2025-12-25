@@ -50,12 +50,8 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult 
 		if len(parts)%2 == 0 {
 			for i := 1; i < len(parts); i += 2 {
 				value := parts[i]
-				if strings.Contains(string(r.Body), value) {
-					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "raw input reflected", fc))
-				}
-
-				if strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
-					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "encoded input reflected", fc))
+				if strings.Contains(string(r.Body), value) || strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
+					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "input reflected", fc))
 				}
 
 			}
