@@ -19,6 +19,7 @@ type FlagCondition struct {
 	IgnoreHash       bool
 	IgnoreReflection bool
 	Wordlist         string
+	Top              int
 }
 
 const (

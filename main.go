@@ -33,6 +33,7 @@ func main() {
 	ignoreHash := flag.Bool("ignore-hash", false, "Ignore hash diffs")
 	ignoreReflection := flag.Bool("ignore-reflection", false, "Ignore reflections")
 	wordlist := flag.String("wordlist", "wordlists\\urlparam.txt", "Wordlist for testing")
+	top := flag.Int("top", 0, "Show only N results with highest score")
 
 	flag.Parse()
 	var fc types.FlagCondition
@@ -52,6 +53,7 @@ func main() {
 	fc.IgnoreHash = *ignoreHash
 	fc.IgnoreReflection = *ignoreReflection
 	fc.Wordlist = (*wordlist)
+	fc.Top = *top
 
 	if flag.NArg() < 1 {
 		fmt.Printf(`
@@ -60,7 +62,7 @@ func main() {
   / __  / / / __ \/ //_/
  / /_/ / / / / / / ,<   
 /_____/_/_/_/ /_/_/|_|  `)
-		fmt.Println(types.Magenta + "[ v0.5 ]  \n" + types.Reset)
+		fmt.Println(types.Magenta + "[ v0.6 ]  \n" + types.Reset)
 		fmt.Println(types.Yellow + "[INFO] " + types.Reset + "Use -help to see available options." + types.Reset)
 		return
 	} else {
@@ -85,7 +87,7 @@ func main() {
 		}
 		testresults := core.Diffs(results, fc)
 		profile := core.BuildProfile(testresults)
-		output.DiffsOutput(testresults)
+		output.DiffsOutput(testresults, fc)
 		output.ProfileOutput(profile)
 	}
 	if fc.TestForms {
@@ -98,7 +100,7 @@ func main() {
 		for _, result := range results {
 			results := core.Diffs(result, fc)
 			profile := core.BuildProfile(results)
-			output.DiffsOutput(results)
+			output.DiffsOutput(results, fc)
 			output.ProfileOutput(profile)
 		}
 

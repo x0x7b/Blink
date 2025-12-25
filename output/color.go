@@ -31,3 +31,16 @@ func colorTime(timing time.Duration) string {
 	}
 
 }
+
+func colorScore(score float64) string {
+	switch {
+	case score <= 0.3:
+		return types.White
+	case score > 0.3 && score < 0.7:
+		return types.Yellow
+	case score >= 0.7:
+		return types.Red
+	default:
+		return types.White
+	}
+}
