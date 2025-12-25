@@ -94,6 +94,7 @@ type Progress struct {
 
 type BehaviorProfile struct {
 	TotalTests int
+	Ratios     map[DiffKind]float64
 	Counts     map[DiffKind]int
 }
 
@@ -106,6 +107,7 @@ type Diff struct {
 
 type TestResult struct {
 	Payload string
+	Score   float64
 	Path    string
 	Diffs   []Diff
 }
@@ -138,4 +140,17 @@ func (k DiffKind) String() string {
 	default:
 		return "UNKNOWN"
 	}
+}
+
+func (k DiffKind) MarshalText() ([]byte, error) {
+	return []byte(k.String()), nil
+}
+
+var BaseWeight = map[DiffKind]float64{
+	DiffBodyHash: 1.0,
+	DiffStatus:   1.0,
+	DiffRTT:      1.0,
+	DiffReflect:  1.0,
+	DiffHeaders:  1.0,
+	DiffCookies:  1.0,
 }

@@ -12,7 +12,10 @@ func DiffsOutput(results []types.TestResult) {
 		if len(res.Diffs) == 0 {
 			continue
 		}
-		out.WriteString(types.Cyan + res.Path + types.Reset + " " + res.Payload + "\n")
+		if res.Payload != "" {
+			out.WriteString(fmt.Sprintf("%v %s %v %s %.2f\n", types.Cyan, res.Path, types.Reset, res.Payload, res.Score))
+		}
+
 		for _, d := range res.Diffs {
 			if d.Before != "" && d.After != "" {
 				out.WriteString(fmt.Sprintf("%v   %-12s %v: %v -> %v\n", types.Magenta, d.Kind, types.Reset, d.Before, d.After))

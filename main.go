@@ -84,7 +84,9 @@ func main() {
 			return
 		}
 		testresults := core.Diffs(results, fc)
+		profile := core.BuildProfile(testresults)
 		output.DiffsOutput(testresults)
+		output.ProfileOutput(profile)
 	}
 	if fc.TestForms {
 		_, results, err := scanners.TestForms(response, fc, output.Report)
@@ -95,8 +97,9 @@ func main() {
 		fmt.Printf(types.Yellow + "\n[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		for _, result := range results {
 			results := core.Diffs(result, fc)
+			profile := core.BuildProfile(results)
 			output.DiffsOutput(results)
-
+			output.ProfileOutput(profile)
 		}
 
 	}

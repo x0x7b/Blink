@@ -78,7 +78,7 @@ func verboseOutput(bl types.BlinkResponse, fc types.FlagCondition) {
 
 	out.WriteString(types.Cyan + "headers:" + types.Reset + "\n")
 	for k, v := range bl.Headers {
-		out.WriteString(fmt.Sprintf("  "+types.Cyan+"%s:"+types.Reset+" %s\n", k, v))
+		out.WriteString(fmt.Sprintf("  %-12s:"+types.Reset+" %s\n", k, v))
 	}
 
 	out.WriteString(bodyOutput(bl, fc))

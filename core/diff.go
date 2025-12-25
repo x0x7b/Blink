@@ -21,7 +21,15 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult 
 	}
 	for _, r := range bl[1:] {
 		var res types.TestResult
-		res.Payload = r.RequestData
+		if r.RequestData != "" {
+			res.Payload = r.RequestData
+		} else {
+			u, _ := url.Parse(r.URL)
+			q := u.Query()
+			res.Payload = q.Encode()
+
+		}
+
 		res.Path = r.RawRequest.URL.Path
 		if r.URL == "" {
 			continue
