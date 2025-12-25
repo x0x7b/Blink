@@ -77,13 +77,14 @@ func main() {
 		output.CleanOutput(response, redirects, fc)
 	}
 	if fc.TestParam {
-		_, results, err := scanners.TesUrlParam(response, fc, output.Report)
+		results, err := scanners.TesUrlParam(response, fc, output.Report)
 		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		if err.Stage != "OK" {
 			fmt.Println(output.ErrorOutput(err))
 			return
 		}
-		core.Diffs(results, fc)
+		testresults := core.Diffs(results, fc)
+		output.DiffsOutput(testresults)
 	}
 	if fc.TestForms {
 		_, results, err := scanners.TestForms(response, fc, output.Report)
@@ -99,4 +100,6 @@ func main() {
 		}
 
 	}
+	fmt.Print("\033[0m\n")
+
 }

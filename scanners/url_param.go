@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition, report func(types.Progress)) (types.BlinkResponse, []types.BlinkResponse, types.BlinkError) {
+func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition, report func(types.Progress)) ([]types.BlinkResponse, types.BlinkError) {
 	var response types.BlinkResponse
 	var redirects []types.BlinkResponse
 	var results []types.BlinkResponse
@@ -19,12 +19,12 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition, report func(typ
 	u, _ := url.Parse(bl.URL)
 	q := u.Query()
 	if len(q) == 0 {
-		return response, redirects, types.BlinkError{Message: "the parameter test flag is enabled, but no parameters were found in the specified url"}
+		return redirects, types.BlinkError{Message: "the parameter test flag is enabled, but no parameters were found in the specified url"}
 	}
 	file, ferr := os.Open(fc.Wordlist)
 	if ferr != nil {
 		log.Printf("%s", ferr.Error())
-		return response, results, err
+		return results, err
 	}
 
 	var payloads []string
@@ -54,5 +54,5 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition, report func(typ
 		}
 	}
 
-	return response, results, err
+	return results, err
 }
