@@ -33,7 +33,7 @@ func defaultOutput(bl types.BlinkResponse, fc types.FlagCondition) {
 	}
 	out.WriteString(ColorStatus(bl.StatusCode) + fmt.Sprintf("%v ", bl.StatusCode) + types.Reset)
 	out.WriteString(types.Blue + "[ " + types.Reset + types.Cyan + bl.Method + types.Reset + " " + bl.URL + types.Blue + " ] " + types.Reset)
-	out.WriteString(fmt.Sprintf("(%v)\n", bl.Timings.FullRtt))
+	out.WriteString(fmt.Sprintf("(%v%v%v)\n", colorTime(bl.Timings.FullRtt), bl.Timings.FullRtt, types.Reset))
 	out.WriteString(bodyOutput(bl, fc))
 	serverFingerprint(bl, fc)
 	fmt.Print(out.String())

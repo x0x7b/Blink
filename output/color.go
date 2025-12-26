@@ -22,9 +22,9 @@ func colorTime(timing time.Duration) string {
 	switch {
 	case timing < 150*time.Millisecond:
 		return types.Green
-	case timing >= 150*time.Microsecond:
+	case timing >= 150*time.Millisecond && timing < 700*time.Millisecond:
 		return types.Yellow
-	case timing >= 300*time.Millisecond:
+	case timing >= 700*time.Millisecond:
 		return types.Red
 	default:
 		return types.Red
