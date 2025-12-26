@@ -4,7 +4,9 @@ import (
 	"Blink/types"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func DiffsOutput(results []types.TestResult, fc types.FlagCondition) {
@@ -26,7 +28,35 @@ func DiffsOutput(results []types.TestResult, fc types.FlagCondition) {
 
 		for _, d := range res.Diffs {
 			if d.Before != "" && d.After != "" {
-				out.WriteString(fmt.Sprintf("%v   %-12s %v: %v -> %v\n", types.Magenta, d.Kind, types.Reset, d.Before, d.After))
+				if d.Kind == types.DiffRTT {
+					beforeNS, err := strconv.ParseInt(d.Before, 10, 64)
+					if err != nil {
+						panic(err)
+					}
+					afterNS, err := strconv.ParseInt(d.After, 10, 64)
+					if err != nil {
+						panic(err)
+					}
+
+					beforeRTT := time.Duration(beforeNS)
+					afterRTT := time.Duration(afterNS)
+
+					beforeMS := beforeRTT.Milliseconds()
+					afterMS := afterRTT.Milliseconds()
+
+					out.WriteString(fmt.Sprintf(
+						"%v   %-12s %v: %4dms → %4dms\n",
+						types.Magenta,
+						d.Kind,
+						types.Reset,
+						beforeMS,
+						afterMS,
+					))
+
+				} else {
+					out.WriteString(fmt.Sprintf("%v   %-12s %v: %v -> %v\n", types.Magenta, d.Kind, types.Reset, d.Before, d.After))
+				}
+
 			} else {
 				out.WriteString(fmt.Sprintf("%v   %-12s %v: %v%v\n", types.Magenta, d.Kind, types.Reset, d.Before, d.After))
 			}
