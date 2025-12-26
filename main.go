@@ -66,7 +66,8 @@ func main() {
 		fmt.Println(types.Yellow + "[INFO] " + types.Reset + "Use -help to see available options." + types.Reset)
 		return
 	} else {
-		fmt.Println(types.Magenta + "[ Blink v0.5 ]  \n" + types.Reset)
+
+		fmt.Println(types.Magenta + "[ Blink v0.6 ]  \n" + types.Reset)
 	}
 
 	url := flag.Arg(0)

@@ -14,7 +14,7 @@ func ProfileOutput(profile types.BehaviorProfile) {
 	out.WriteString(types.Cyan + "Behavior profile:\n" + types.Reset)
 	out.WriteString("  Total tests: " + strconv.Itoa(profile.TotalTests) + "\n")
 	for k, c := range profile.Counts {
-		out.WriteString(fmt.Sprintf("    %-10s: %d (%.2f)\n", k, c, profile.Ratios[k]))
+		out.WriteString(fmt.Sprintf("    %-10s: %d (%.0f%%)\n", k, c, profile.Ratios[k]*100))
 	}
 	fmt.Print(out.String())
 }
