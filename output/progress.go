@@ -45,6 +45,6 @@ func RenderProgress(p types.Progress) {
 		speed,
 	)
 	if percent == 100 {
-		fmt.Print("\r\033[K")
+		fmt.Print("\r\033[K\n")
 	}
 }
