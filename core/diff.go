@@ -66,9 +66,6 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult 
 			res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(baseline.Timings.FullRtt), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
 		}
 		DiffCookie(baseline.Cookies, r.Cookies, types.FlagCondition{})
-		if len(baseline.Cookies) != len(r.Cookies) {
-			res.Diffs = append(res.Diffs, diffLine(types.DiffCookies, strconv.Itoa(len(baseline.Cookies)), strconv.Itoa(len(r.Cookies)), fc))
-		}
 
 		results = append(results, res)
 	}
