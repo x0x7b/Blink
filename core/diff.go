@@ -65,7 +65,12 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult 
 		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
 			res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(baseline.Timings.FullRtt), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
 		}
-		DiffCookie(baseline.Cookies, r.Cookies, types.FlagCondition{})
+		cookiediff := DiffCookie(baseline.Cookies, r.Cookies, types.FlagCondition{})
+		if len(cookiediff) != 0 {
+			for _, d := range cookiediff {
+				res.Diffs = append(res.Diffs, d)
+			}
+		}
 
 		results = append(results, res)
 	}

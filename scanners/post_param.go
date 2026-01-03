@@ -47,7 +47,7 @@ func TestForms(baseline types.BlinkResponse, fc types.FlagCondition, report func
 		newURL := newURLurl.String()
 		values := make(url.Values)
 		for _, input := range form.Inputs {
-			values.Add(input.Name, "testvalue")
+			values.Add(input.Name, "test")
 		}
 		body := values.Encode()
 
