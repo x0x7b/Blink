@@ -46,7 +46,6 @@ type BlinkResponse struct {
 	BodyPreview   string
 	BodyHash      string
 	ContentLength int64
-	RTT           time.Duration
 	Method        string
 	URL           string
 	TLSVersion    uint16
