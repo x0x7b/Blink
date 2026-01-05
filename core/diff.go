@@ -2,7 +2,6 @@ package core
 
 import (
 	"Blink/types"
-	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
@@ -66,11 +65,14 @@ func Diffs(bl []types.BlinkResponse, timings []time.Duration, fc types.FlagCondi
 		}
 		if timings != nil {
 			med := Median(timings)
-			deltaAbs := r.Timings.FullRtt - med
+			// deltaAbs := r.Timings.FullRtt - med
 			deltaRel := float64(r.Timings.FullRtt-med) / float64(med)
-			fmt.Println(deltaRel)
-			if deltaRel <= -0.45 {
-				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(baseline.Timings.FullRtt), 10), fmt.Sprintf("%v  %v", strconv.FormatInt(int64(med), 10), deltaAbs), fc))
+			if deltaRel <= -0.50 {
+				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(med), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
+			}
+			if deltaRel >= +0.50 {
+				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(med), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
+
 			}
 		}
 		cookiediff := DiffCookie(baseline.Cookies, r.Cookies, types.FlagCondition{})
