@@ -2,6 +2,7 @@ package core
 
 import (
 	"Blink/types"
+	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
@@ -38,11 +39,11 @@ func Diffs(bl []types.BlinkResponse, timings []time.Duration, fc types.FlagCondi
 		}
 
 		if baseline.StatusCode != r.StatusCode {
-			res.Diffs = append(res.Diffs, diffLine(types.DiffStatus, strconv.Itoa(baseline.StatusCode), strconv.Itoa(r.StatusCode), fc))
+			res.Diffs = append(res.Diffs, diffLine(types.DiffStatus, strconv.Itoa(baseline.StatusCode), strconv.Itoa(r.StatusCode), fc, ""))
 		}
 
 		if baseline.BodyHash != r.BodyHash {
-			res.Diffs = append(res.Diffs, diffLine(types.DiffBodyHash, shortHash(baseline.BodyHash), shortHash(r.BodyHash), fc))
+			res.Diffs = append(res.Diffs, diffLine(types.DiffBodyHash, shortHash(baseline.BodyHash), shortHash(r.BodyHash), fc, ""))
 		}
 
 		parts := strings.FieldsFunc(r.RequestData, func(g rune) bool {
@@ -53,7 +54,7 @@ func Diffs(bl []types.BlinkResponse, timings []time.Duration, fc types.FlagCondi
 			for i := 1; i < len(parts); i += 2 {
 				value := parts[i]
 				if strings.Contains(string(r.Body), value) || strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
-					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "input reflected", fc))
+					res.Diffs = append(res.Diffs, diffLine(types.DiffReflect, "", "input reflected", fc, ""))
 				}
 
 			}
@@ -61,17 +62,17 @@ func Diffs(bl []types.BlinkResponse, timings []time.Duration, fc types.FlagCondi
 
 		headersChanges := diffHeaders(baseline.Headers, r.Headers)
 		if len(headersChanges) > 0 {
-			res.Diffs = append(res.Diffs, diffLine(types.DiffHeaders, "", strings.Join(headersChanges, ", "), fc))
+			res.Diffs = append(res.Diffs, diffLine(types.DiffHeaders, "", strings.Join(headersChanges, ", "), fc, ""))
 		}
 		if timings != nil {
 			med := Median(timings)
 			// deltaAbs := r.Timings.FullRtt - med
 			deltaRel := float64(r.Timings.FullRtt-med) / float64(med)
 			if deltaRel <= -0.50 {
-				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(med), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
+				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(med), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc, fmt.Sprintf("%.2f", deltaRel)))
 			}
 			if deltaRel >= +0.50 {
-				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(med), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
+				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(med), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc, fmt.Sprintf("%.2f", deltaRel)))
 
 			}
 		}
@@ -102,7 +103,7 @@ func diffHeaders(base, mod http.Header) []string {
 	}
 	return changes
 }
-func diffLine(field types.DiffKind, bfr string, afr string, fc types.FlagCondition) types.Diff {
+func diffLine(field types.DiffKind, bfr string, afr string, fc types.FlagCondition, meta string) types.Diff {
 	var diff types.Diff
 	if fc.IgnoreHash {
 		if field == types.DiffBodyHash {
@@ -118,6 +119,7 @@ func diffLine(field types.DiffKind, bfr string, afr string, fc types.FlagConditi
 	diff.Kind = field
 	diff.Before = bfr
 	diff.After = afr
+	diff.Meta = meta
 	return diff
 }
 
@@ -138,7 +140,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 	for n := range blm {
 		_, ok := resm[n]
 		if !ok {
-			diffs = append(diffs, diffLine(types.DiffCookies, "deleted", "", fc))
+			diffs = append(diffs, diffLine(types.DiffCookies, "", "", fc, "cookie deleted"))
 			continue
 		}
 		if blm[n].Raw == resm[n].Raw {
@@ -149,7 +151,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 
 		if bc.Value != rc.Value {
 			diffs = append(diffs,
-				diffLine(types.DiffCookies, bc.Value, rc.Value, fc))
+				diffLine(types.DiffCookies, bc.Value, rc.Value, fc, ""))
 		}
 
 		if bc.Quoted != rc.Quoted {
@@ -159,17 +161,18 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					strconv.FormatBool(bc.Quoted),
 					strconv.FormatBool(rc.Quoted),
 					fc,
+					"",
 				))
 		}
 
 		if bc.Path != rc.Path {
 			diffs = append(diffs,
-				diffLine(types.DiffCookies, bc.Path, rc.Path, fc))
+				diffLine(types.DiffCookies, bc.Path, rc.Path, fc, ""))
 		}
 
 		if bc.Domain != rc.Domain {
 			diffs = append(diffs,
-				diffLine(types.DiffCookies, bc.Domain, rc.Domain, fc))
+				diffLine(types.DiffCookies, bc.Domain, rc.Domain, fc, ""))
 		}
 
 		if !bc.Expires.Equal(rc.Expires) {
@@ -179,6 +182,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					bc.Expires.String(),
 					rc.Expires.String(),
 					fc,
+					"",
 				))
 		}
 
@@ -189,6 +193,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					strconv.Itoa(bc.MaxAge),
 					strconv.Itoa(rc.MaxAge),
 					fc,
+					"",
 				))
 		}
 
@@ -199,6 +204,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					strconv.FormatBool(bc.Secure),
 					strconv.FormatBool(rc.Secure),
 					fc,
+					"",
 				))
 		}
 
@@ -209,6 +215,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					strconv.FormatBool(bc.HttpOnly),
 					strconv.FormatBool(rc.HttpOnly),
 					fc,
+					"",
 				))
 		}
 
@@ -219,6 +226,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					sameSiteToString(bc.SameSite),
 					sameSiteToString(rc.SameSite),
 					fc,
+					"",
 				))
 		}
 
@@ -229,6 +237,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 					strconv.FormatBool(bc.Partitioned),
 					strconv.FormatBool(rc.Partitioned),
 					fc,
+					"",
 				))
 		}
 
@@ -236,7 +245,7 @@ func DiffCookie(bl []*http.Cookie, res []*http.Cookie, fc types.FlagCondition) [
 	for n := range resm {
 		_, ok := blm[n]
 		if !ok {
-			diffs = append(diffs, diffLine(types.DiffCookies, "added", "", fc))
+			diffs = append(diffs, diffLine(types.DiffCookies, "", "", fc, "cookie added"))
 			continue
 		}
 	}
