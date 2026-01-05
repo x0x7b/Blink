@@ -12,7 +12,7 @@ func CleanOutput(bl types.BlinkResponse, rc []types.BlinkResponse, fc types.Flag
 		redirectChainOutput(rc, fc)
 	}
 	if len(rc) > 0 && bl.URL == "" {
-		core.Diffs(rc, fc)
+		core.Diffs(rc, nil, fc)
 	}
 	if bl.URL == "" {
 		return

@@ -72,6 +72,15 @@ func main() {
 
 	url := flag.Arg(0)
 	response, redirects, err := core.HttpRequest(*method, url, fc)
+	if err.Stage != "OK" {
+		fmt.Println(output.ErrorOutput(err))
+		return
+	}
+	timings, err := core.DoSeries(*method, url, fc)
+	if err.Stage != "OK" {
+		fmt.Println(output.ErrorOutput(err))
+		return
+	}
 	output.ErrorOutput(err)
 
 	if len(redirects) > 0 {
@@ -86,20 +95,21 @@ func main() {
 			fmt.Println(output.ErrorOutput(err))
 			return
 		}
-		testresults := core.Diffs(results, fc)
+		testresults := core.Diffs(results, timings, fc)
 		profile := core.BuildProfile(testresults)
 		output.DiffsOutput(testresults, fc)
 		output.ProfileOutput(profile)
 	}
 	if fc.TestForms {
 		_, results, err := scanners.TestForms(response, fc, output.Report)
+
 		if err.Stage != "OK" {
 			fmt.Println(output.ErrorOutput(err))
 			return
 		}
 		fmt.Printf(types.Yellow + "\n[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		for _, result := range results {
-			results := core.Diffs(result, fc)
+			results := core.Diffs(result, timings, fc)
 			profile := core.BuildProfile(results)
 			output.DiffsOutput(results, fc)
 			output.ProfileOutput(profile)

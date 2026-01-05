@@ -2,13 +2,16 @@ package core
 
 import (
 	"Blink/types"
+	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult {
+func Diffs(bl []types.BlinkResponse, timings []time.Duration, fc types.FlagCondition) []types.TestResult {
 	var results []types.TestResult
 	if len(bl) == 0 {
 		return results
@@ -61,9 +64,14 @@ func Diffs(bl []types.BlinkResponse, fc types.FlagCondition) []types.TestResult 
 		if len(headersChanges) > 0 {
 			res.Diffs = append(res.Diffs, diffLine(types.DiffHeaders, "", strings.Join(headersChanges, ", "), fc))
 		}
-
-		if baseline.Timings.FullRtt*2 < r.Timings.FullRtt {
-			res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(baseline.Timings.FullRtt), 10), strconv.FormatInt(int64(r.Timings.FullRtt), 10), fc))
+		if timings != nil {
+			med := Median(timings)
+			deltaAbs := r.Timings.FullRtt - med
+			deltaRel := float64(r.Timings.FullRtt-med) / float64(med)
+			fmt.Println(deltaRel)
+			if deltaRel <= -0.45 {
+				res.Diffs = append(res.Diffs, diffLine(types.DiffRTT, strconv.FormatInt(int64(baseline.Timings.FullRtt), 10), fmt.Sprintf("%v  %v", strconv.FormatInt(int64(med), 10), deltaAbs), fc))
+			}
 		}
 		cookiediff := DiffCookie(baseline.Cookies, r.Cookies, types.FlagCondition{})
 		if len(cookiediff) != 0 {
@@ -254,4 +262,16 @@ func sameSiteToString(s http.SameSite) string {
 	default:
 		return "Unknown"
 	}
+}
+
+func Median(slice []time.Duration) time.Duration {
+	sort.Slice(slice, func(i, j int) bool {
+		return slice[i] < slice[j]
+	})
+
+	n := len(slice)
+	if n%2 == 1 {
+		return slice[n/2]
+	}
+	return (slice[n/2-1] + slice[n/2]) / 2
 }

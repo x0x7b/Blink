@@ -199,3 +199,21 @@ func makeBlinkResponce(resp *http.Response, timings types.NetworkTimings) (types
 
 	return blinkResp, nil
 }
+
+func DoSeries(method, domain string, fc types.FlagCondition) ([]time.Duration, types.BlinkError) {
+	var timings []time.Duration
+
+	for i := 0; i < 5; i++ {
+		resp, _, err := HttpRequest(method, domain, fc)
+		if err.Stage != "OK" {
+			continue
+		}
+		timings = append(timings, resp.Timings.FullRtt)
+	}
+
+	if len(timings) == 0 {
+		return nil, types.BlinkError{Stage: "no valid RTT samples"}
+	}
+
+	return timings, types.BlinkError{Stage: "OK"}
+}
