@@ -45,7 +45,7 @@ func DiffsOutput(results []types.TestResult, fc types.FlagCondition) {
 					afterMS := afterRTT.Milliseconds()
 
 					out.WriteString(fmt.Sprintf(
-						"%v   %-12s %v: %4dms → %4dms %v%v%v\n",
+						"%v   %-12s %v: %4dms → %4dms (%vx%v%v)\n",
 						types.Magenta,
 						d.Kind,
 						types.Reset,
