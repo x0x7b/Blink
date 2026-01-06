@@ -147,10 +147,10 @@ func (k DiffKind) MarshalText() ([]byte, error) {
 }
 
 var BaseWeight = map[DiffKind]float64{
-	DiffBodyHash: 1.0,
-	DiffStatus:   1.0,
-	DiffRTT:      1.0,
-	DiffReflect:  1.0,
+	DiffRTT:      5.0,
+	DiffBodyHash: 2.0,
+	DiffReflect:  2.0,
+	DiffStatus:   1.5,
 	DiffHeaders:  1.0,
-	DiffCookies:  1.0,
+	DiffCookies:  0.5,
 }
