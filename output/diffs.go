@@ -31,11 +31,11 @@ func DiffsOutput(results []types.TestResult, fc types.FlagCondition) {
 				if d.Kind == types.DiffRTT {
 					beforeNS, err := strconv.ParseInt(d.Before, 10, 64)
 					if err != nil {
-						panic(err)
+						continue
 					}
 					afterNS, err := strconv.ParseInt(d.After, 10, 64)
 					if err != nil {
-						panic(err)
+						continue
 					}
 
 					beforeRTT := time.Duration(beforeNS)
