@@ -1,6 +1,6 @@
 # Blink
 
-![status](https://img.shields.io/badge/status-pre--1.0-lightgrey)
+![status](https://img.shields.io/badge/status-release--1.0-green)
 
 **Blink** is a diff-based HTTP behavior analysis tool.
 
@@ -54,12 +54,14 @@ $ blink -url-params --top 5 http://testphp.vulnweb.com/artists.php?artist=1
 Output:
 
 ```
-/artists.php  0.95  artist=SLEEP(1)
-  BODY_HASH : b190247d32 -> 31eb90d287
-  RTT       : 211230185 -> 3215177548
+[ Blink 1.0 ]  
 
-/artists.php  0.00  artist=1234
-  BODY_HASH : 211230185 -> 3215177548
+200 [ GET http://testphp.vulnweb.com/artists.php?artist=1 ] (477.83979ms)
+
+[WARN] Showing results ONLY with diffs
+ /artists.php  4.61  artist=%250a
+   BODY_HASH    : b190247d32 -> b9cb738867 
+   RTT          :  214ms →  800ms (x2.74)
 ```
 
 Higher score → rarer + stronger behavioral change.
@@ -115,13 +117,12 @@ go run main.go
 
 ## Project status
 
-Pre-1.0
-Active development.
 
-The internal model and CLI are still evolving.
+v1.0 Released
 
 ---
 
 ## License
 
 MIT
+
