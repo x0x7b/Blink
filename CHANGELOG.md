@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0
+
+### Added
+- Stable release: all core scanning, diffing, and output features finalized.
+- CLI flags and behavior normalized.
+- Full 1.0 documentation updated.
+
+### Changed
+- Minor internal fixes (wordlist path, safe iterations, normalized CLI flags).
+
+### Fixed
+- Panic calls removed.
+- File handling improved (defer closes, safe hash computation).
+- Typo fixes in function names.
+
+
 ## v0.6
 
 ### Added
