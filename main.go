@@ -83,11 +83,7 @@ func main() {
 	}
 	output.ErrorOutput(err)
 
-	if len(redirects) > 0 {
-		output.CleanOutput(response, redirects, fc)
-	} else {
-		output.CleanOutput(response, redirects, fc)
-	}
+	output.CleanOutput(response, redirects, fc)
 	if fc.TestParam {
 		results, err := scanners.TesUrlParam(response, fc, output.Report)
 		fmt.Printf(types.Yellow + "[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
