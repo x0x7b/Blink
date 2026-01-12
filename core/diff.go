@@ -50,7 +50,7 @@ func Diffs(bl []types.BlinkResponse, timings []time.Duration, fc types.FlagCondi
 			return g == '=' || g == '&'
 		})
 
-		if len(parts)%2 == 0 {
+		if len(parts)%2 == 0 && len(parts) >= 2 {
 			for i := 1; i < len(parts); i += 2 {
 				value := parts[i]
 				if strings.Contains(string(r.Body), value) || strings.Contains(string(r.Body), url.QueryEscape(value)) || strings.Contains(string(r.Body), url.QueryEscape(url.QueryEscape(value))) {
@@ -126,6 +126,8 @@ func diffLine(field types.DiffKind, bfr string, afr string, fc types.FlagConditi
 func shortHash(hash string) string {
 	if len(hash) >= 10 {
 		return hash[:10]
+	} else if hash != "" {
+		return hash
 	} else {
 		return "EMPTY_HASH"
 	}
