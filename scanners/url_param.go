@@ -26,13 +26,14 @@ func TesUrlParam(bl types.BlinkResponse, fc types.FlagCondition, report func(typ
 		log.Printf("%s", ferr.Error())
 		return results, err
 	}
+	defer file.Close()
 
 	var payloads []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		payloads = append(payloads, scanner.Text())
 	}
-	file.Close()
+
 	for param, _ := range q {
 		for i, payload := range payloads {
 			new_value := payload
