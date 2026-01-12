@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const Version = "1.0"
+
 type FlagCondition struct {
 	ShowBody         bool
 	FollowRedirects  bool

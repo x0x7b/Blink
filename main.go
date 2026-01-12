@@ -62,12 +62,12 @@ func main() {
   / __  / / / __ \/ //_/
  / /_/ / / / / / / ,<   
 /_____/_/_/_/ /_/_/|_|  `)
-		fmt.Println(types.Magenta + "[ v0.6 ]  \n" + types.Reset)
+		fmt.Println(types.Magenta + types.Version + "\n" + types.Reset)
 		fmt.Println(types.Yellow + "[INFO] " + types.Reset + "Use -help to see available options." + types.Reset)
 		return
 	} else {
 
-		fmt.Println(types.Magenta + "[ Blink v0.6 ]  \n" + types.Reset)
+		fmt.Println(types.Magenta + "[ Blink " + types.Version + " ]  \n" + types.Reset)
 	}
 
 	url := flag.Arg(0)
