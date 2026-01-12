@@ -109,9 +109,9 @@ func main() {
 		}
 		fmt.Printf(types.Yellow + "\n[WARN] " + types.Reset + "Showing results ONLY with diffs\n")
 		for _, result := range results {
-			results := core.Diffs(result, timings, fc)
-			profile := core.BuildProfile(results)
-			output.DiffsOutput(results, fc)
+			diffResults := core.Diffs(result, timings, fc)
+			profile := core.BuildProfile(diffResults)
+			output.DiffsOutput(diffResults, fc)
 			output.ProfileOutput(profile)
 		}
 
