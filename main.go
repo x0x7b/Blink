@@ -13,11 +13,11 @@ func main() {
 
 	showBody := flag.Bool("b", false, "Show response body")
 	showBody2 := flag.Bool("body", false, "Show response body")
-	showBodyLong := flag.Bool("full-body", false, "Show response body")
+	showBodyLong := flag.Bool("full-body", false, "Show full response body")
 
 	method := flag.String("X", "GET", "HTTP method")
 
-	followRedirects := flag.Bool("no-follow", false, "Follow redirects")
+	noFollow := flag.Bool("no-follow", false, "Do not follow redirects")
 	maxRedirects := flag.Int("max-redirects", 5, "Set value to max redirects")
 
 	outputMode := flag.Int("output", 0, "Output mode:\n   0 - default\n   1 - verbose\n   2 - redirect chain")
@@ -44,7 +44,7 @@ func main() {
 		fc.ShowFullBody = true
 	}
 	fc.ShowFp = *getSF
-	fc.FollowRedirects = !*followRedirects
+	fc.FollowRedirects = !*noFollow
 	fc.MaxRedirects = *maxRedirects
 	fc.Timeout = *timeout
 	fc.OutputMode = *outputMode
