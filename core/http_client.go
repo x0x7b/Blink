@@ -111,7 +111,7 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 			return blinkResp, redirectChain, ClassifyNetworkError(err)
 		}
 
-		blinkResp, err = makeBlinkResponce(resp, networkTimings)
+		blinkResp, err = makeBlinkResponse(resp, networkTimings)
 		if err != nil {
 			return blinkResp, redirectChain, ClassifyNetworkError(err)
 		}
@@ -150,7 +150,7 @@ func HttpRequest(method string, domain string, fc types.FlagCondition) (types.Bl
 	return types.BlinkResponse{}, redirectChain, ClassifyNetworkError(nil)
 }
 
-func makeBlinkResponce(resp *http.Response, timings types.NetworkTimings) (types.BlinkResponse, error) {
+func makeBlinkResponse(resp *http.Response, timings types.NetworkTimings) (types.BlinkResponse, error) {
 	var blinkResp types.BlinkResponse
 
 	blinkResp.RawRequest = resp.Request
