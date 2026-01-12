@@ -7,6 +7,7 @@ import (
 	"Blink/types"
 	"flag"
 	"fmt"
+	"path/filepath"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 
 	ignoreHash := flag.Bool("ignore-hash", false, "Ignore hash diffs")
 	ignoreReflection := flag.Bool("ignore-reflection", false, "Ignore reflections")
-	wordlist := flag.String("wordlist", "wordlists\\urlparam.txt", "Wordlist for testing")
+	wordlist := flag.String("wordlist", filepath.Join("wordlists", "urlparam.txt"), "Wordlist for testing")
 	top := flag.Int("top", 0, "Show only N results with highest score")
 
 	flag.Parse()
