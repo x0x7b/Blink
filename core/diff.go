@@ -124,7 +124,7 @@ func diffLine(field types.DiffKind, bfr string, afr string, fc types.FlagConditi
 }
 
 func shortHash(hash string) string {
-	if hash != "" {
+	if len(hash) >= 10 {
 		return hash[:10]
 	} else {
 		return "EMPTY_HASH"
